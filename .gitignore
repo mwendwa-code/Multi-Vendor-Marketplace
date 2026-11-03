@@ -11,8 +11,8 @@ node_modules/
 *.sqlite3
 
 *cookies*.txt
-private/
-public/uploads/
+backend/private/
+frontend/public/uploads/
 
 npm-debug.log*
 yarn-debug.log*

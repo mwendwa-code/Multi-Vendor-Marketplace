@@ -4,7 +4,7 @@ const path = require("path");
 const crypto = require("crypto");
 const sharp = require("sharp");
 const { recordAuditEvent } = require("../database/audit");
-const imageDirectory = path.join(__dirname, "..", "public", "uploads", "products");
+const imageDirectory = path.join(__dirname, "..", "..", "frontend", "public", "uploads", "products");
 
 exports.getSellerProducts = async (req, res) => {
     return res.redirect("/seller");

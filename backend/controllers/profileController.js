@@ -7,7 +7,7 @@ const sharp = require("sharp");
 const { normalizeBusinessWebsite } = require("../services/businessWebsite");
 const { recordAuditEvent } = require("../database/audit");
 
-const logoDirectory = path.join(__dirname, "..", "public", "uploads", "seller-logos");
+const logoDirectory = path.join(__dirname, "..", "..", "frontend", "public", "uploads", "seller-logos");
 
 exports.getProfile = async (req, res) => {
     if (!req.session?.user) {

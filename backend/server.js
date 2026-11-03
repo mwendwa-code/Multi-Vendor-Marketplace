@@ -72,7 +72,7 @@ if (process.env.TRUST_PROXY === "true") {
 }
 
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
+app.set("views", path.join(__dirname, "..", "frontend", "views"));
 app.use((req, res, next) => {
   res.locals.cspNonce = crypto.randomBytes(16).toString("base64");
   next();
@@ -90,7 +90,7 @@ app.use(helmet({
 
 app.use(express.urlencoded({ extended: false, limit: "16kb" }));
 app.use(express.json({ limit: "16kb" }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "..", "frontend", "public")));
 
 app.use(
   session({
