@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs/promises");
+const fsSync = require("fs");
 const crypto = require("crypto");
 const express = require("express");
 const session = require("express-session");
@@ -7,7 +8,11 @@ const helmet = require("helmet");
 const dotenv = require("dotenv");
 
 dotenv.config({
-  path: [path.join(__dirname, ".env"), path.join(__dirname, "..", ".env")]
+  path: [
+    path.join(__dirname, ".env"),
+    path.join(__dirname, "..", ".env"),
+    path.join(__dirname, "..", "..", ".env")
+  ].filter((envPath) => fsSync.existsSync(envPath))
 });
 
 if (
