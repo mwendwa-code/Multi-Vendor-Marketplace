@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Dashboard | The Marketplace</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 30px 16px;
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            background-image:
+                linear-gradient(rgba(15, 23, 42, 0.62), rgba(15, 23, 42, 0.62)),
+                url("https://i.pinimg.com/736x/e7/c2/14/e7c2140dbb07836b61c2a68c11b51575.jpg");
+            background-position: center;
+            background-size: cover;
+            background-attachment: fixed;
+            color: #172033;
+        }
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            background: #172554;
+            color: white;
+            padding: 20px 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .brand-logo {
+            display: block;
+            max-height: 72px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 16px rgba(14, 116, 144, 0.2));
+        }
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .nav a, .nav button {
+            color: white;
+            text-decoration: none;
+            font: inherit;
+            background: transparent;
+            border: 0;
+            cursor: pointer;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+        }
+        .card h3 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .card strong {
+            font-size: 28px;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: capitalize;
+            background: #e2e8f0;
+            color: #334155;
+        }
+        .status.approved { background: #dcfce7; color: #166534; }
+        .status.pending { background: #fef3c7; color: #92400e; }
+        .status.rejected { background: #fee2e2; color: #991b1b; }
+        .muted { color: #64748b; }
+        .nav form, .status-form { margin: 0; }
+        .status-form { display: flex; gap: 8px; align-items: center; }
+        .status-form select, .status-form button {
+            padding: 7px 9px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: inherit;
+        }
+        .status-form button {
+            border: 0;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+        .status-form button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .status-form select:disabled { color: #64748b; }
+        .table-wrap { overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <main>
+        <header class="topbar">
+            <a class="brand-link" href="/" aria-label="The Marketplace home">
+                <img class="brand-logo" src="/images/multivendor-logo.png" alt="Multi Vendor Marketplace logo">
+            </a>
+            <nav class="nav">
+                <a href="/">Home</a>
+                <a href="/profile">Profile</a>
+                <form action="/auth/logout" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit">Logout</button>
+                </form>
+            </nav>
+        </header>
+
+        <h2>Manager Dashboard</h2>
+        <p>Welcome, <%= user.name %>.</p>
+
+        <section class="cards">
+            <div class="card">
+                <h3>Buyers</h3>
+                <strong><%= stats.buyers %></strong>
+            </div>
+            <div class="card">
+                <h3>Sellers</h3>
+                <strong><%= stats.sellers %></strong>
+            </div>
+            <div class="card">
+                <h3>Managers</h3>
+                <strong><%= stats.managers %></strong>
+            </div>
+            <div class="card">
+                <h3>Products</h3>
+                <strong><%= stats.totalProducts %></strong>
+            </div>
+            <div class="card">
+                <h3>Orders</h3>
+                <strong><%= stats.totalOrders %></strong>
+            </div>
+            <div class="card">
+                <h3>Items in stock</h3>
+                <strong><%= stats.totalInventory %></strong>
+            </div>
+            <div class="card">
+                <h3>Revenue</h3>
+                <strong>KSh <%= Number(stats.grossRevenue).toLocaleString("en-KE") %></strong>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h3>Seller applications</h3>
+            <% if (!sellerApplications || sellerApplications.length === 0) { %>
+                <p class="muted">No seller applications are pending.</p>
+            <% } else { %>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Seller</th>
+                            <th>Business</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% sellerApplications.forEach(function(applicant) { %>
+                            <tr>
+                                <td><strong><%= applicant.name %></strong><br><span class="muted"><%= applicant.email %></span></td>
+                                <td><%= applicant.business_name %></td>
+                                <td><span class="status <%= applicant.status %>"><%= applicant.status %></span></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } %>
+        </section>
+
+        <section class="panel">
+            <h3>Recent orders</h3>
+            <% if (!recentOrders || recentOrders.length === 0) { %>
+                <p class="muted">No orders yet.</p>
+            <% } else { %>
+                <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Buyer</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Date</th>
+                            <th>Update status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% recentOrders.forEach(function(order) { %>
+                            <tr>
+                                <td>#<%= order.id %></td>
+                                <td><%= order.buyer_name %></td>
+                                <td><span class="status <%= order.status %>"><%= order.status %></span></td>
+                                <td>KSh <%= Number(order.total).toLocaleString("en-KE") %></td>
+                                <td><%= new Date(order.created_at).toLocaleDateString("en-KE") %></td>
+                                <td>
+                                    <% const nextStatuses = orderStatusTransitions[order.status] || []; %>
+                                    <form class="status-form" action="/manager/orders/<%= order.id %>/status" method="POST">
+                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                        <select name="status" aria-label="New status for order <%= order.id %>" <%= nextStatuses.length === 0 ? 'disabled' : '' %>>
+                                            <% if (nextStatuses.length === 0) { %>
+                                                <option><%= order.status %> (final)</option>
+                                            <% } else { %>
+                                                <% nextStatuses.forEach(function(status) { %>
+                                                    <option value="<%= status %>"><%= status %></option>
+                                                <% }); %>
+                                            <% } %>
+                                        </select>
+                                        <button type="submit" <%= nextStatuses.length === 0 ? 'disabled' : '' %>>Update</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+                </div>
+            <% } %>
+        </section>
+
+        <section class="panel">
+            <h3>Low stock inventory</h3>
+            <p class="muted">Products with 5 or fewer units remaining.</p>
+            <% if (!lowStockProducts || lowStockProducts.length === 0) { %>
+                <p class="muted">No low-stock products to report.</p>
+            <% } else { %>
+                <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Seller</th>
+                            <th>Units remaining</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% lowStockProducts.forEach(function(product) { %>
+                            <tr>
+                                <td><%= product.name %></td>
+                                <td><%= product.seller_name %></td>
+                                <td><%= product.stock %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+                </div>
+            <% } %>
+        </section>
+    </main>
+</body>
+</html>

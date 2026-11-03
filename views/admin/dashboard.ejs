@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | The Marketplace</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f5f6fa;
+            color: #1f2937;
+        }
+        .admin-shell {
+            display: grid;
+            grid-template-columns: 236px minmax(0, 1fr);
+            grid-template-rows: 70px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+        .dashboard-sidebar {
+            grid-column: 1;
+            grid-row: 1 / span 2;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 14px;
+            border-right: 1px solid #e8e9f0;
+            background: #fff;
+        }
+        .sidebar-brand {
+            display: flex;
+            height: 52px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .sidebar-brand img {
+            display: block;
+            width: 100%;
+            height: 52px;
+            object-fit: contain;
+        }
+        .sidebar-label {
+            margin: 0 0 8px 10px;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+        .section-nav {
+            display: grid;
+            gap: 5px;
+        }
+        .section-nav a {
+            display: flex;
+            min-height: 40px;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 10px;
+            border-radius: 8px;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 150ms ease, color 150ms ease;
+        }
+        .section-nav-icon {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.8;
+        }
+        .section-nav a:first-child,
+        .section-nav a:hover,
+        .section-nav a:focus-visible {
+            background: #2563eb;
+            color: #fff;
+        }
+        .topbar {
+            grid-column: 2;
+            grid-row: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 0 28px;
+            border-bottom: 1px solid #e8e9f0;
+            background: #fff;
+        }
+        .topbar-link {
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .topbar-account {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .admin-avatar {
+            display: grid;
+            width: 36px;
+            height: 36px;
+            place-items: center;
+            border-radius: 50%;
+            background: #dbeafe;
+            color: #2563eb;
+            font-weight: 700;
+        }
+        .admin-identity { display: grid; gap: 2px; }
+        .admin-identity strong { font-size: 13px; }
+        .admin-identity span { color: #64748b; font-size: 11px; }
+        main {
+            grid-column: 2;
+            grid-row: 2;
+            min-width: 0;
+            margin: 0;
+            padding: 26px 28px 40px;
+        }
+        .page-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .page-heading h1 { margin: 0; color: #111827; font-size: 26px; }
+        .page-heading p { margin: 5px 0 0; color: #64748b; font-size: 13px; }
+        a, button {
+            color: #2563eb;
+            font: inherit;
+        }
+        button {
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            text-align: left;
+            padding: 9px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: capitalize;
+            background: #e2e8f0;
+            color: #334155;
+        }
+        .status.approved { background: #dcfce7; color: #166534; }
+        .status.rejected { background: #fee2e2; color: #991b1b; }
+        .status.pending { background: #fef3c7; color: #92400e; }
+        .status.paid { background: #dcfce7; color: #166534; }
+        .status.approved::before,
+        .status.pending::before,
+        .status.rejected::before {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            margin-right: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            content: "";
+            vertical-align: 1px;
+        }
+        .actions-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-approve { background: #16a34a; }
+        .btn-reject { background: #dc2626; }
+        .muted { color: #64748b; }
+        section[id] { scroll-margin-top: 20px; }
+        .table-wrap { overflow-x: auto; }
+        .section-card {
+            margin-bottom: 16px;
+            padding: 20px;
+            border: 1px solid #e8eaf1;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 3px 12px rgba(15, 23, 42, .035);
+        }
+        .section-card h2 { margin: 0 0 12px; color: #111827; font-size: 17px; }
+        .cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+        .card {
+            min-width: 0;
+            padding: 16px;
+            border: 1px solid #e8eaf1;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 3px 10px rgba(15, 23, 42, .045);
+        }
+        .card h3 { margin: 0 0 9px; color: #64748b; font-size: 12px; font-weight: 600; }
+        .card strong { color: #111827; font-size: 21px; }
+        .filters, .actions-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .filters select, .filters button, .commission-form input,
+        .moderation-form textarea, .payout-form select {
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: inherit;
+        }
+        .filters button, .commission-form button, .moderation-form button,
+        .payout-form button {
+            border: 0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+        .commission-form, .moderation-form { display: grid; gap: 8px; }
+        .commission-form input { width: 140px; }
+        .commission-panel { display: grid; gap: 18px; }
+        .commission-panel > p { margin: 0; }
+        .commission-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .commission-summary-card {
+            padding: 15px;
+            border: 1px solid #e8eaf1;
+            border-radius: 10px;
+            background: #fafaff;
+        }
+        .commission-summary-card span { display: block; color: #64748b; font-size: 12px; }
+        .commission-summary-card strong { display: block; margin-top: 6px; color: #26213a; font-size: 21px; }
+        .commission-settings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+        }
+        .commission-settings-card {
+            padding: 16px;
+            border: 1px solid #e8eaf1;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .commission-settings-card h3 { margin: 0 0 6px; color: #1f2937; font-size: 15px; }
+        .commission-settings-card > p { margin: 0 0 14px; color: #64748b; font-size: 12px; line-height: 1.5; }
+        .commission-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+        .commission-fields label { display: grid; gap: 6px; color: #475569; font-size: 12px; }
+        .commission-fields input,
+        .commission-fields select {
+            width: 100%;
+            min-width: 0;
+            padding: 9px 10px;
+            border: 1px solid #dbe0e8;
+            border-radius: 7px;
+            background: #fff;
+            font: inherit;
+        }
+        .commission-fields button { grid-column: 1 / -1; background: #2563eb; }
+        .commission-table { min-width: 600px; }
+        .commission-table th { background: #fafafa; color: #64748b; font-size: 12px; }
+        .commission-table td { vertical-align: middle; }
+        .commission-table form { margin: 0; }
+        .commission-remove {
+            padding: 7px 9px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            color: #b91c1c;
+        }
+        .moderation-panel {
+            padding: 0;
+            overflow: hidden;
+            border-color: #dce8e5;
+            background: #f1f8f6;
+        }
+        .moderation-heading { padding: 22px 22px 12px; }
+        .moderation-heading h2 { margin: 0 0 6px; color: #16332f; font-size: 22px; }
+        .moderation-heading p { max-width: 700px; margin: 0; color: #58716c; font-size: 13px; }
+        .moderation-content {
+            margin: 0 16px 16px;
+            padding: 16px;
+            border: 1px solid #dce8e5;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .moderation-toolbar {
+            display: grid;
+            grid-template-columns: minmax(180px, 1fr) auto minmax(150px, 185px) minmax(150px, 185px) auto;
+            align-items: end;
+            gap: 8px;
+            margin: 8px 0 12px;
+        }
+        .moderation-search-wrap,
+        .moderation-filter {
+            display: grid;
+            gap: 5px;
+            color: #52635f;
+            font-size: 11px;
+        }
+        .moderation-search-wrap input,
+        .moderation-filter select {
+            width: 100%;
+            min-width: 0;
+            height: 38px;
+            padding: 8px 10px;
+            border: 1px solid #d8e3e1;
+            border-radius: 7px;
+            background: #fff;
+            color: #334155;
+            font: inherit;
+        }
+        .moderation-search-button {
+            height: 38px;
+            padding: 8px 13px;
+            background: #f8fbfa;
+            border: 1px solid #d8e3e1;
+            color: #334155;
+        }
+        .moderation-bulk-button { height: 38px; padding: 8px 13px; background: #0c8b73; white-space: nowrap; }
+        .moderation-table-wrap {
+            overflow-x: auto;
+            border: 1px solid #e0eae8;
+            border-radius: 8px;
+        }
+        .moderation-table { min-width: 850px; margin: 0; }
+        .moderation-table th {
+            padding: 10px 9px;
+            background: #eef7f5;
+            color: #52635f;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .moderation-table td {
+            padding: 9px;
+            border-bottom-color: #e6eeec;
+            color: #354541;
+            font-size: 12px;
+            vertical-align: middle;
+        }
+        .moderation-table tbody tr:hover { background: #f8fbfa; }
+        .moderation-check-cell { width: 34px; text-align: center; }
+        .moderation-check-cell input { width: 15px; height: 15px; accent-color: #0c8b73; }
+        .moderation-product-cell { display: flex; min-width: 210px; align-items: center; gap: 9px; }
+        .moderation-product-cell img,
+        .moderation-product-placeholder {
+            display: grid;
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
+            place-items: center;
+            border-radius: 6px;
+            background: #eef4f3;
+            color: #71817e;
+            object-fit: cover;
+        }
+        .moderation-product-name {
+            display: block;
+            max-width: 250px;
+            overflow: hidden;
+            color: #263b37;
+            font-weight: 600;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .moderation-product-meta { display: block; margin-top: 3px; color: #75837f; font-size: 11px; }
+        .moderation-workflow { color: #52635f; white-space: nowrap; }
+        .moderation-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #eef2f1;
+            color: #687571;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .moderation-status.pending { background: #fff6db; color: #a16b00; }
+        .moderation-status.approved { background: #dcfce7; color: #18834a; }
+        .moderation-status.rejected { background: #feecee; color: #c33b4a; }
+        .moderation-field-check { color: #199269; font-size: 15px; font-weight: 700; }
+        .moderation-field-missing { color: #d04c5a; font-size: 15px; font-weight: 700; }
+        .moderation-date { color: #687571; white-space: nowrap; }
+        .moderation-actions { position: relative; }
+        .moderation-actions summary {
+            color: #087c68;
+            cursor: pointer;
+            list-style: none;
+            white-space: nowrap;
+        }
+        .moderation-actions summary::-webkit-details-marker { display: none; }
+        .moderation-actions[open] > div {
+            position: absolute;
+            z-index: 4;
+            right: 12px;
+            width: 240px;
+            margin-top: 6px;
+            padding: 10px;
+            border: 1px solid #dce8e5;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, .12);
+        }
+        .moderation-actions .moderation-form { gap: 6px; }
+        .moderation-actions .moderation-form textarea { min-height: 55px; resize: vertical; }
+        .moderation-actions .moderation-form button { padding: 7px 9px; background: #0c8b73; }
+        .moderation-actions .moderation-form .btn-reject { background: #dc4554; }
+        .moderation-results { margin: 10px 2px 0; color: #71817e; font-size: 11px; }
+        .moderation-empty { padding: 22px; color: #71817e; text-align: center; }
+        .delivery-summary {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+            margin: 14px 0;
+        }
+        .delivery-stat {
+            padding: 13px;
+            border: 1px solid #e5e9f0;
+            border-radius: 9px;
+            background: #fff;
+        }
+        .delivery-stat span { display: block; color: #64748b; font-size: 11px; }
+        .delivery-stat strong { display: block; margin-top: 5px; color: #1f2937; font-size: 20px; }
+        .delivery-stat.is-alert strong { color: #c2410c; }
+        .delivery-filter { display: flex; align-items: end; gap: 8px; margin: 0 0 12px; }
+        .delivery-filter label { display: grid; gap: 5px; color: #64748b; font-size: 12px; }
+        .delivery-filter select {
+            min-width: 190px;
+            padding: 9px 10px;
+            border: 1px solid #dbe2e8;
+            border-radius: 7px;
+            background: #fff;
+            color: #334155;
+            font: inherit;
+        }
+        .delivery-filter button { padding: 9px 12px; background: #0c8b73; }
+        .delivery-table { min-width: 1150px; }
+        .delivery-table th { background: #f1f5f9; color: #64748b; font-size: 11px; white-space: nowrap; }
+        .delivery-table td { padding: 10px 8px; font-size: 12px; vertical-align: middle; }
+        .delivery-table tr.delivery-delayed { background: #fffaf0; }
+        .delivery-health {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #ecfdf3;
+            color: #15803d;
+            font-size: 10px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .delivery-health.delayed { background: #fff3d4; color: #b45309; }
+        .delivery-health.issue { background: #fff0f0; color: #c2413b; }
+        .delivery-case { min-width: 210px; max-width: 290px; }
+        .delivery-case summary { color: #0c7663; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .delivery-case-content {
+            display: grid;
+            gap: 7px;
+            min-width: 230px;
+            margin-top: 8px;
+        }
+        .delivery-case-content p { margin: 0; line-height: 1.45; overflow-wrap: anywhere; }
+        .delivery-case-content form { display: grid; gap: 6px; }
+        .delivery-case-content textarea,
+        .delivery-case-content select {
+            width: 100%;
+            padding: 7px 8px;
+            border: 1px solid #dbe2e8;
+            border-radius: 6px;
+            background: #fff;
+            color: #334155;
+            font: inherit;
+            font-size: 12px;
+        }
+        .delivery-case-content textarea { min-height: 58px; resize: vertical; }
+        .delivery-case-content button { padding: 7px 9px; background: #0c8b73; font-size: 12px; }
+        .delivery-case-content .delivery-case-resolve { background: #475569; }
+        .delivery-complaint-status {
+            display: inline-block;
+            width: fit-content;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: #fff3d4;
+            color: #a16207;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+        .delivery-complaint-status.resolved { background: #ecfdf3; color: #15803d; }
+        .delivery-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 12px;
+            color: #64748b;
+            font-size: 12px;
+        }
+        .delivery-pagination a {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 7px 10px;
+            border: 1px solid #dbe2e8;
+            border-radius: 6px;
+            color: #334155;
+            text-decoration: none;
+        }
+        .delivery-pagination a[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+        .payout-panel { padding: 0; overflow: hidden; background: #f7f7fc; }
+        .payout-heading { padding: 20px 20px 8px; }
+        .payout-heading h2 { margin: 0 0 5px; }
+        .payout-heading p { margin: 0; }
+        .payout-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            padding: 8px 20px 14px;
+        }
+        .payout-stat {
+            min-width: 0;
+            padding: 14px;
+            border: 1px solid #e6e5f0;
+            border-radius: 9px;
+            background: #fff;
+        }
+        .payout-stat span { display: block; color: #64748b; font-size: 11px; }
+        .payout-stat strong { display: block; margin-top: 6px; color: #26213a; font-size: 20px; }
+        .payout-stat.pending strong { color: #2563eb; }
+        .payout-history-panel {
+            margin: 0 12px 12px;
+            padding: 14px;
+            border: 1px solid #e5e5ee;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .payout-history-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 0 0 12px;
+            padding: 11px 12px;
+            border: 1px solid #e6e5f0;
+            border-radius: 8px;
+            background: #f9f8fd;
+        }
+        .payout-history-toolbar h3 { margin: 0; color: #29243b; font-size: 15px; }
+        .payout-status-tabs { display: flex; flex-wrap: wrap; gap: 5px; }
+        .payout-status-tabs a {
+            padding: 7px 10px;
+            border-radius: 6px;
+            background: transparent;
+            color: #64748b;
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .payout-status-tabs a[aria-current="page"] { background: #dbeafe; color: #1d4ed8; font-weight: 700; }
+        .payout-table { min-width: 900px; margin: 0; }
+        .payout-table th { padding: 11px 9px; background: #f3f2f8; color: #64748b; font-size: 11px; white-space: nowrap; }
+        .payout-table td { padding: 11px 9px; font-size: 12px; vertical-align: middle; }
+        .payout-id { color: #2563eb; font-weight: 700; }
+        .payout-balance { color: #475569; white-space: nowrap; font-weight: 600; }
+        .payout-actions { display: grid; min-width: 175px; gap: 7px; }
+        .payout-actions form { display: grid; gap: 6px; margin: 0; }
+        .payout-actions .actions-row { flex-wrap: nowrap; }
+        .payout-actions button { padding: 7px 9px; font-size: 11px; white-space: nowrap; }
+        .payout-verify { display: flex; align-items: flex-start; gap: 6px; color: #64748b; font-size: 10px; line-height: 1.4; }
+        .payout-verify input { margin: 1px 0 0; accent-color: #16a34a; }
+        .payout-verify + button:disabled { opacity: .5; cursor: not-allowed; }
+        .payout-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 12px;
+            color: #64748b;
+            font-size: 12px;
+        }
+        .payout-pagination a {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 7px 10px;
+            border: 1px solid #dbe2e8;
+            border-radius: 6px;
+            color: #334155;
+            text-decoration: none;
+        }
+        .payout-pagination a[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+        .ledger-panel {
+            padding: 0;
+            overflow: hidden;
+            background: #e8eef2;
+        }
+        .ledger-heading { padding: 20px 20px 8px; }
+        .ledger-heading h2 { margin: 0 0 5px; }
+        .ledger-heading p { margin: 0; }
+        .ledger-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            padding: 8px 20px 14px;
+        }
+        .ledger-stat {
+            min-width: 0;
+            padding: 13px;
+            border: 1px solid #e2e8ef;
+            border-radius: 9px;
+            background: #fff;
+        }
+        .ledger-stat span { display: block; color: #64748b; font-size: 11px; }
+        .ledger-stat strong { display: block; margin-top: 6px; color: #1f2937; font-size: 20px; }
+        .ledger-stat .ledger-stat-note { margin-top: 4px; color: #16a34a; font-size: 11px; }
+        .ledger-table-panel {
+            margin: 0 12px 12px;
+            padding: 14px;
+            border: 1px solid #dfe6eb;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .ledger-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .ledger-tabs { display: flex; gap: 5px; overflow-x: auto; }
+        .ledger-tab {
+            flex: 0 0 auto;
+            padding: 8px 11px;
+            border-radius: 7px;
+            background: transparent;
+            color: #64748b;
+            font-size: 12px;
+        }
+        .ledger-tab[aria-pressed="true"] { background: #b6cbd6; color: #1f2937; }
+        .ledger-search {
+            width: min(230px, 100%);
+            padding: 9px 11px;
+            border: 1px solid #dbe2e8;
+            border-radius: 7px;
+            font: inherit;
+        }
+        .ledger-table { min-width: 760px; }
+        .ledger-table th {
+            padding: 11px 9px;
+            background: #b6cbd6;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .ledger-table td { padding: 12px 9px; font-size: 12px; vertical-align: middle; }
+        .ledger-table tbody tr:hover { background: #f8fafc; }
+        .ledger-id { color: #334155; font-weight: 600; white-space: nowrap; }
+        .ledger-secondary { display: block; margin-top: 3px; color: #64748b; font-size: 11px; }
+        .ledger-amount { white-space: nowrap; font-weight: 600; }
+        .ledger-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .ledger-status::before { width: 7px; height: 7px; border-radius: 50%; background: currentColor; content: ""; }
+        .ledger-status.completed { background: #ecfdf3; color: #16a34a; }
+        .ledger-status.pending { background: #fffbeb; color: #d97706; }
+        .ledger-status.cancelled { background: #fff1f2; color: #e11d48; }
+        .ledger-details { position: relative; }
+        .ledger-details summary {
+            color: #475569;
+            cursor: pointer;
+            list-style: none;
+            white-space: nowrap;
+        }
+        .ledger-details summary::-webkit-details-marker { display: none; }
+        .ledger-details summary::after { content: "  ▾"; }
+        .ledger-details[open] > div {
+            position: absolute;
+            z-index: 3;
+            right: 0;
+            width: 240px;
+            margin-top: 6px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, .12);
+            line-height: 1.7;
+        }
+        .ledger-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 12px;
+            color: #64748b;
+            font-size: 12px;
+        }
+        .ledger-pagination-controls { display: flex; align-items: center; gap: 6px; }
+        .ledger-pagination button {
+            padding: 7px 10px;
+            border: 1px solid #d7e0e6;
+            background: white;
+            color: #475569;
+        }
+        .ledger-pagination button:disabled { opacity: .5; cursor: not-allowed; }
+        .ledger-empty { padding: 22px 10px; color: #64748b; text-align: center; }
+        .moderation-form textarea { min-width: 180px; min-height: 60px; }
+        .product-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; background: #e2e8f0; }
+        .status.shipped { background: #dbeafe; color: #1d4ed8; }
+        .status.processing { background: #dbeafe; color: #1d4ed8; }
+        .status.delivered, .status.earned { background: #dcfce7; color: #166534; }
+        .status.void, .status.cancelled { background: #fee2e2; color: #991b1b; }
+        .analytics-note { margin: 8px 0 20px; }
+        .vendor-onboarding-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        .vendor-onboarding-heading h2 { margin: 0; }
+        .vendor-filter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+        .vendor-filter label { color: #64748b; font-size: 12px; }
+        .vendor-filter select {
+            min-width: 120px;
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 7px;
+            background: #fff;
+            color: #334155;
+            font: inherit;
+        }
+        .vendor-filter button {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #334155;
+        }
+        .vendor-table { min-width: 650px; }
+        .vendor-table th {
+            padding: 12px 10px;
+            background: #fafafa;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .vendor-table td { padding: 12px 10px; font-size: 13px; }
+        .vendor-table tbody tr:hover { background: #fafafa; }
+        .vendor-name { color: #1f2937; font-weight: 600; }
+        .vendor-subname { display: block; margin-top: 3px; color: #64748b; font-size: 12px; }
+        .vendor-info { margin-top: 4px; color: #64748b; font-size: 11px; }
+        .vendor-info summary { width: fit-content; color: #2563eb; cursor: pointer; }
+        .vendor-info p { margin: 5px 0 0; max-width: 320px; overflow-wrap: anywhere; }
+        .vendor-info a { color: #2563eb; }
+        .vendor-date { white-space: nowrap; color: #475569; }
+        .vendor-actions { position: relative; width: 40px; }
+        .vendor-actions summary {
+            display: grid;
+            width: 30px;
+            height: 30px;
+            place-items: center;
+            border-radius: 6px;
+            color: #64748b;
+            cursor: pointer;
+            font-weight: 700;
+            list-style: none;
+        }
+        .vendor-actions summary::-webkit-details-marker { display: none; }
+        .vendor-actions summary:hover { background: #f1f5f9; }
+        .vendor-actions-menu {
+            position: absolute;
+            z-index: 2;
+            top: 32px;
+            right: 0;
+            display: grid;
+            min-width: 130px;
+            gap: 5px;
+            padding: 7px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, .12);
+        }
+        .vendor-actions-menu form { margin: 0; }
+        .vendor-actions-menu button {
+            width: 100%;
+            padding: 8px;
+            background: #fff;
+            color: #334155;
+            text-align: left;
+        }
+        .vendor-actions-menu .vendor-approve { color: #15803d; }
+        .vendor-actions-menu .vendor-reject { color: #b91c1c; }
+        .actions { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+        .topbar-account form { margin: 0; }
+        .topbar-account button { padding: 9px 13px; background: #2563eb; }
+        @media (max-width: 1100px) {
+            .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .ledger-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .moderation-toolbar { grid-template-columns: minmax(180px, 1fr) auto minmax(150px, 185px); }
+            .moderation-bulk-button { grid-column: 3; }
+            .delivery-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .payout-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 860px) {
+            .admin-shell {
+                grid-template-columns: minmax(0, 1fr);
+                grid-template-rows: auto auto minmax(0, 1fr);
+            }
+            .dashboard-sidebar {
+                grid-column: 1;
+                grid-row: 2;
+                position: static;
+                height: auto;
+                padding: 10px 14px;
+                border-right: 0;
+                border-bottom: 1px solid #e8e9f0;
+            }
+            .sidebar-brand { display: none; }
+            .topbar { grid-column: 1; grid-row: 1; min-height: 64px; padding: 0 16px; }
+            main { grid-column: 1; grid-row: 3; padding: 20px 16px 32px; }
+            .section-nav {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 4px;
+            }
+            .section-nav a { flex: 0 0 auto; }
+        }
+        @media (max-width: 560px) {
+            .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .page-heading h1 { font-size: 22px; }
+            .section-card { padding: 15px; }
+            .admin-identity { display: none; }
+            .vendor-onboarding-heading { align-items: flex-start; flex-direction: column; }
+            .ledger-toolbar { align-items: stretch; flex-direction: column; }
+            .ledger-search { width: 100%; }
+            .ledger-table-panel { margin: 0 8px 8px; padding: 9px; }
+            .ledger-summary { padding-right: 12px; padding-left: 12px; }
+            .ledger-heading { padding-right: 12px; padding-left: 12px; }
+            .moderation-heading { padding: 18px 12px 10px; }
+            .moderation-content { margin: 0 8px 8px; padding: 9px; }
+            .moderation-toolbar { grid-template-columns: minmax(0, 1fr) auto; }
+            .moderation-search-wrap { grid-column: 1 / -1; }
+            .moderation-filter { grid-column: 1 / 2; }
+            .moderation-bulk-button { grid-column: 2; }
+            .delivery-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .delivery-filter { align-items: stretch; flex-direction: column; }
+            .delivery-filter select { width: 100%; }
+            .delivery-pagination { align-items: flex-start; flex-direction: column; }
+            .payout-heading { padding-right: 12px; padding-left: 12px; }
+            .payout-summary { padding-right: 12px; padding-left: 12px; }
+            .payout-history-panel { margin: 0 8px 8px; padding: 9px; }
+            .payout-history-toolbar { align-items: flex-start; flex-direction: column; }
+            .payout-pagination { align-items: flex-start; flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-shell">
+        <aside class="dashboard-sidebar">
+            <a class="sidebar-brand" href="/" aria-label="The Marketplace home">
+                <img src="/images/multivendor-logo.png" alt="Multi Vendor Marketplace">
+            </a>
+            <p class="sidebar-label">Administration</p>
+            <nav class="section-nav" aria-label="Admin dashboard sections">
+                <a href="#marketplace-analytics"><svg class="section-nav-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg><span>Dashboard</span></a>
+                <a href="#vendor-onboarding"><svg class="section-nav-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg><span>Vendor onboarding</span></a>
+                <a href="#commission-rules"><svg class="section-nav-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8 16 8-8"/><circle cx="8.5" cy="8.5" r="1"/><circle cx="15.5" cy="15.5" r="1"/></svg><span>Commission rules</span></a>
+                <a href="#financial-ledger"><svg class="section-nav-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M5 3h14v18H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M7 8h10M7 12h10M7 16h6"/></svg><span>Financial ledger</span></a>
+                <a href="#product-moderation"><svg class="section-nav-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="10"/></svg><span>Product moderation</span></a>
+                <a href="#delivery-monitor"><svg class="section-nav-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 6h12v12H3zM15 10h4l3 3v5h-7"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="18.5" cy="18.5" r="1.5"/></svg><span>Delivery monitor</span></a>
+                <a href="#payout-requests"><svg class="section-nav-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 6h15a2 2 0 0 1 2 2v12H4a2 2 0 0 1-2-2V6a3 3 0 0 1 3-3h13v3"/><path d="M21 11h-5a2 2 0 0 0 0 4h5"/></svg><span>Payout requests</span></a>
+            </nav>
+        </aside>
+        <header class="topbar">
+            <a class="topbar-link" href="/">Browse marketplace</a>
+            <div class="topbar-account">
+                <span class="admin-avatar" aria-hidden="true">A</span>
+                <span class="admin-identity">
+                    <strong><%= user.name %></strong>
+                    <span>Marketplace administrator</span>
+                </span>
+                <form action="/auth/logout" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit">Log out</button>
+                </form>
+            </div>
+        </header>
+        <main>
+        <div class="page-heading">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Welcome back! Here’s what’s happening with your marketplace.</p>
+            </div>
+        </div>
+        <% if (commissionUpdated || productModerationUpdated || payoutUpdated || codPaymentRecorded) { %>
+            <p role="status">Your admin changes were saved.</p>
+        <% } %>
+
+        <section class="section-card" id="marketplace-analytics">
+            <h2>Marketplace macro analytics</h2>
+            <section class="cards">
+                <div class="card"><h3>Customers</h3><strong><%= marketplaceStats.customer_count %></strong></div>
+                <div class="card"><h3>Approved vendors</h3><strong><%= marketplaceStats.approved_seller_count %></strong></div>
+                <div class="card"><h3>Vendor applications</h3><strong><%= marketplaceStats.pending_seller_count %></strong></div>
+                <div class="card"><h3>Orders</h3><strong><%= marketplaceStats.order_count %></strong></div>
+                <div class="card"><h3>Paid orders</h3><strong><%= marketplaceStats.paid_order_count %></strong></div>
+                <div class="card"><h3>Paid gross revenue</h3><strong>KSh <%= marketplaceStats.gross_revenue.toLocaleString("en-KE") %></strong></div>
+                <div class="card"><h3>Revenue · last 30 days</h3><strong>KSh <%= marketplaceStats.revenue_last_30_days.toLocaleString("en-KE") %></strong></div>
+                <div class="card"><h3>Live products</h3><strong><%= marketplaceStats.live_product_count %></strong></div>
+                <div class="card"><h3>Awaiting moderation</h3><strong><%= marketplaceStats.pending_product_count %></strong></div>
+                <div class="card"><h3>Earned commission</h3><strong>KSh <%= marketplaceStats.earned_commission.toLocaleString("en-KE") %></strong></div>
+                <div class="card"><h3>Outstanding payouts</h3><strong>KSh <%= marketplaceStats.outstanding_payouts.toLocaleString("en-KE") %></strong></div>
+                <div class="card"><h3>Orders to dispatch / in transit</h3><strong><%= marketplaceStats.orders_to_dispatch %> / <%= marketplaceStats.orders_in_transit %></strong></div>
+            </section>
+            <p class="muted analytics-note">Revenue includes orders in paid, processing, shipped, or delivered status. Commission and financial figures use saved per-item splits; rejected payout requests are excluded.</p>
+            <h3>Order and revenue trend · last 6 months</h3>
+            <% if (analyticsTrend && analyticsTrend.length) { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Month</th><th>Orders</th><th>Gross revenue</th></tr></thead>
+                        <tbody><% analyticsTrend.forEach(function(month) { %>
+                            <tr><td><%= month.month %></td><td><%= month.order_count %></td><td>KSh <%= Number(month.gross_revenue).toLocaleString("en-KE") %></td></tr>
+                        <% }); %></tbody>
+                    </table>
+                </div>
+            <% } else { %><p class="muted">Monthly paid-order data will appear here.</p><% } %>
+        </section>
+        <section class="section-card">
+            <h2>Database backup</h2>
+            <form action="/admin/backups" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit">Create backup</button>
+            </form>
+            <% if (backupFile) { %>
+                <p role="status">Backup created:
+                    <a href="/admin/backups/<%= encodeURIComponent(backupFile) %>"><%= backupFile %></a>
+                </p>
+            <% } %>
+        </section>
+
+        <section class="section-card">
+            <h2>Recent audit activity</h2>
+            <% if (!auditLogs || auditLogs.length === 0) { %>
+                <p class="muted">No audit activity recorded yet.</p>
+            <% } else { %>
+                <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Time</th><th>Actor</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        <% auditLogs.forEach(function(entry) { %>
+                            <tr>
+                                <td><%= entry.created_at %></td>
+                                <td><%= entry.actor_name || "System" %></td>
+                                <td><%= entry.action %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+                </div>
+            <% } %>
+        </section>
+
+        <section class="section-card" id="vendor-onboarding">
+            <div class="vendor-onboarding-heading">
+                <h2>Seller creation requests</h2>
+                <form class="vendor-filter" action="/admin#vendor-onboarding" method="GET">
+                    <label for="vendorStatus">Filter</label>
+                    <select id="vendorStatus" name="vendorStatus">
+                        <% ["all", "pending", "approved", "rejected"].forEach(function(status) { %>
+                            <option value="<%= status %>" <%= vendorStatusFilter === status ? "selected" : "" %>><%= status === "all" ? "All statuses" : status %></option>
+                        <% }); %>
+                    </select>
+                    <button type="submit">Apply</button>
+                </form>
+            </div>
+            <% if (!sellerApplications || sellerApplications.length === 0) { %>
+                <p class="muted">No seller applications yet.</p>
+            <% } else { %>
+                <div class="table-wrap">
+                <table class="vendor-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% sellerApplications.forEach(function(applicant) { %>
+                            <tr>
+                                <td>
+                                    <span class="vendor-name"><%= applicant.business_name || applicant.name %></span>
+                                    <% if (applicant.business_name) { %>
+                                        <span class="vendor-subname"><%= applicant.name %></span>
+                                    <% } %>
+                                    <% if (applicant.business_website || applicant.business_description) { %>
+                                        <details class="vendor-info">
+                                            <summary>Business details</summary>
+                                            <% if (applicant.business_website) { %>
+                                                <p><a href="<%= applicant.business_website %>" target="_blank" rel="noopener noreferrer">Visit website</a></p>
+                                            <% } %>
+                                            <% if (applicant.business_description) { %>
+                                                <p><%= applicant.business_description %></p>
+                                            <% } %>
+                                        </details>
+                                    <% } %>
+                                </td>
+                                <td><%= applicant.email %></td>
+                                <td class="vendor-date"><%= new Date(applicant.created_at).toLocaleDateString("en-CA") %></td>
+                                <td><span class="status <%= applicant.status %>"><%= applicant.status %></span></td>
+                                <td class="vendor-actions">
+                                    <% if (applicant.status === "pending") { %>
+                                        <details>
+                                            <summary aria-label="Actions for <%= applicant.business_name || applicant.name %>">•••</summary>
+                                            <div class="vendor-actions-menu">
+                                                <form action="/admin/sellers/<%= applicant.id %>/approve" method="POST">
+                                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                    <button class="vendor-approve" type="submit">Approve seller</button>
+                                                </form>
+                                                <form action="/admin/sellers/<%= applicant.id %>/reject" method="POST">
+                                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                    <button class="vendor-reject" type="submit">Reject seller</button>
+                                                </form>
+                                            </div>
+                                        </details>
+                                    <% } else { %>
+                                        <span class="muted">—</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+                </div>
+            <% } %>
+        </section>
+
+        <section class="section-card commission-panel" id="commission-rules">
+            <div>
+                <h2>Commission rules</h2>
+                <p class="muted">Set platform earnings as a percentage, a flat fee per product line, or both. Seller rules override category rules; category rules override the platform default.</p>
+            </div>
+            <% if (commissionUpdated) { %><p role="status">Commission rule saved.</p><% } %>
+            <div class="commission-summary" aria-label="Platform commission earnings">
+                <div class="commission-summary-card">
+                    <span>Platform earnings collected</span>
+                    <strong>KSh <%= Number(marketplaceStats.earned_commission).toLocaleString("en-KE") %></strong>
+                </div>
+                <div class="commission-summary-card">
+                    <span>Pending commission</span>
+                    <strong>KSh <%= Number(marketplaceStats.pending_commission).toLocaleString("en-KE") %></strong>
+                </div>
+                <div class="commission-summary-card">
+                    <span>Default commission</span>
+                    <strong><%= commissionRate %>% + KSh <%= Number(commissionFlatFee).toLocaleString("en-KE") %></strong>
+                </div>
+            </div>
+            <div class="commission-settings">
+                <div class="commission-settings-card">
+                    <h3>Platform default</h3>
+                    <p>Used when a product has no matching category or seller override.</p>
+                    <form action="/admin/commission-rules" method="POST">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <div class="commission-fields">
+                            <label for="commissionRate">Percentage
+                                <input id="commissionRate" name="commissionRate" type="number" min="0" max="50" step="0.01" value="<%= commissionRate %>" required>
+                            </label>
+                            <label for="platformFlatFee">Flat fee (KSh)
+                                <input id="platformFlatFee" name="flatFee" type="number" min="0" max="99999999.99" step="0.01" value="<%= commissionFlatFee %>" required>
+                            </label>
+                            <button type="submit">Save platform default</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="commission-settings-card">
+                    <h3>Category or seller override</h3>
+                    <p>Applies to new orders only. Flat fee is charged once per product line.</p>
+                    <form action="/admin/commission-rules/overrides" method="POST">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <div class="commission-fields">
+                            <label for="commissionTarget">Category or seller
+                                <select id="commissionTarget" name="targetKey" required>
+                                    <option value="">Choose a target</option>
+                                    <optgroup label="Categories">
+                                        <% commissionCategoryRules.forEach(function(category) { %>
+                                            <option value="category:<%= category.id %>"><%= category.name %></option>
+                                        <% }); %>
+                                    </optgroup>
+                                    <optgroup label="Sellers">
+                                        <% commissionSellerRules.forEach(function(seller) { %>
+                                            <option value="seller:<%= seller.id %>"><%= seller.business_name || seller.name %> — <%= seller.email %></option>
+                                        <% }); %>
+                                    </optgroup>
+                                </select>
+                            </label>
+                            <label for="overrideRate">Percentage
+                                <input id="overrideRate" name="commissionRate" type="number" min="0" max="50" step="0.01" required>
+                            </label>
+                            <label for="overrideFlatFee">Flat fee (KSh)
+                                <input id="overrideFlatFee" name="flatFee" type="number" min="0" max="99999999.99" step="0.01" value="0" required>
+                            </label>
+                            <button type="submit">Save override</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div>
+                <h3>Configured overrides</h3>
+                <div class="table-wrap">
+                    <table class="commission-table">
+                        <thead><tr><th>Rule</th><th>Type</th><th>Percentage</th><th>Flat fee</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            <% commissionCategoryRules.filter(function(rule) { return rule.rule_id; }).forEach(function(rule) { %>
+                                <tr>
+                                    <td><strong><%= rule.name %></strong></td>
+                                    <td>Category</td>
+                                    <td><%= Number(rule.commission_rate) %>%</td>
+                                    <td>KSh <%= Number(rule.flat_fee).toLocaleString("en-KE") %></td>
+                                    <td>
+                                        <form action="/admin/commission-rules/overrides/<%= rule.rule_id %>/delete" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <button class="commission-remove" type="submit">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                            <% commissionSellerRules.filter(function(rule) { return rule.rule_id; }).forEach(function(rule) { %>
+                                <tr>
+                                    <td><strong><%= rule.business_name || rule.name %></strong><div class="muted"><%= rule.email %></div></td>
+                                    <td>Seller</td>
+                                    <td><%= Number(rule.commission_rate) %>%</td>
+                                    <td>KSh <%= Number(rule.flat_fee).toLocaleString("en-KE") %></td>
+                                    <td>
+                                        <form action="/admin/commission-rules/overrides/<%= rule.rule_id %>/delete" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <button class="commission-remove" type="submit">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                            <% if (!commissionCategoryRules.some(function(rule) { return rule.rule_id; }) && !commissionSellerRules.some(function(rule) { return rule.rule_id; })) { %>
+                                <tr><td colspan="5" class="muted">No category or seller overrides configured.</td></tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-card ledger-panel" id="financial-ledger">
+            <div class="ledger-heading">
+                <h2>Financial ledger</h2>
+                <p class="muted">Track platform commission transactions and seller payouts.</p>
+            </div>
+            <% if (codPaymentRecorded) { %><p role="status">Cash-on-delivery payment recorded; the seller commission is now earned.</p><% } %>
+            <div class="ledger-summary">
+                <div class="ledger-stat">
+                    <span>Total platform earnings</span>
+                    <strong>KSh <%= Number(financialLedgerStats.platform_earnings).toLocaleString("en-KE") %></strong>
+                    <span class="ledger-stat-note">Earned commission</span>
+                </div>
+                <div class="ledger-stat">
+                    <span>Completed transactions</span>
+                    <strong><%= financialLedgerStats.completed_count.toLocaleString("en-KE") %></strong>
+                    <span class="ledger-stat-note">Successful commission and paid payout entries</span>
+                </div>
+                <div class="ledger-stat">
+                    <span>Pending transactions</span>
+                    <strong><%= financialLedgerStats.pending_count.toLocaleString("en-KE") %></strong>
+                    <span class="ledger-stat-note">Awaiting payment or review</span>
+                </div>
+                <div class="ledger-stat">
+                    <span>Cancelled transactions</span>
+                    <strong><%= financialLedgerStats.cancelled_count.toLocaleString("en-KE") %></strong>
+                    <span class="ledger-stat-note">Voided sales and rejected payouts</span>
+                </div>
+            </div>
+            <div class="ledger-table-panel">
+            <div class="ledger-toolbar">
+                <div class="ledger-tabs" role="group" aria-label="Filter financial transactions">
+                    <button class="ledger-tab" type="button" data-ledger-filter="all" aria-pressed="true">All <span>(<%= financialLedger.length %>)</span></button>
+                    <button class="ledger-tab" type="button" data-ledger-filter="completed" aria-pressed="false">Completed <span>(<%= financialLedger.filter(function(entry) { return entry.ledger_status === "completed"; }).length %>)</span></button>
+                    <button class="ledger-tab" type="button" data-ledger-filter="pending" aria-pressed="false">Pending <span>(<%= financialLedger.filter(function(entry) { return entry.ledger_status === "pending"; }).length %>)</span></button>
+                    <button class="ledger-tab" type="button" data-ledger-filter="cancelled" aria-pressed="false">Cancelled <span>(<%= financialLedger.filter(function(entry) { return entry.ledger_status === "cancelled"; }).length %>)</span></button>
+                </div>
+                <input class="ledger-search" id="ledger-search" type="search" placeholder="Search transactions" aria-label="Search financial transactions">
+            </div>
+            <% if (financialLedger && financialLedger.length) { %>
+                <p class="muted">Showing the latest 150 transactions. Search and pagination apply to this list.</p>
+                <div class="table-wrap">
+                    <table class="ledger-table">
+                        <thead>
+                            <tr><th>Transaction</th><th>Seller</th><th>Date</th><th>Total</th><th>Method</th><th>Status</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="ledger-rows"><% financialLedger.forEach(function(entry) {
+                            const ledgerStatus = entry.ledger_status;
+                            const entryLabel = entry.entry_type === "commission" ? `Sale #${entry.order_id}` : `Payout #${entry.entry_id}`;
+                            const entryTotal = entry.entry_type === "commission" ? Number(entry.gross_amount) : Number(entry.seller_net_amount);
+                        %>
+                            <tr data-ledger-row data-status="<%= ledgerStatus %>" data-search="<%= `${entryLabel} ${entry.seller_name} ${entry.payment_method} ${entry.payment_status || ''} ${entry.payout_phone || ''}`.toLowerCase() %>">
+                                <td><span class="ledger-id"><%= entryLabel %></span><span class="ledger-secondary"><%= entry.entry_type === "commission" ? `Commission #${entry.entry_id}` : "Seller payout" %></span></td>
+                                <td><strong><%= entry.seller_name %></strong><% if (entry.payout_phone) { %><span class="ledger-secondary"><%= entry.payout_phone %></span><% } %></td>
+                                <td><%= new Date(entry.created_at).toLocaleDateString("en-KE") %></td>
+                                <td class="ledger-amount">KSh <%= entryTotal.toLocaleString("en-KE") %></td>
+                                <td><%= entry.payment_method || "—" %></td>
+                                <td><span class="ledger-status <%= ledgerStatus %>"><%= ledgerStatus %></span></td>
+                                <td>
+                                    <details class="ledger-details">
+                                        <summary>View details</summary>
+                                        <div>
+                                            <strong><%= entry.entry_type === "commission" ? "Sale split" : "Payout request" %></strong><br>
+                                            <% if (entry.order_id) { %>Order: #<%= entry.order_id %><br><% } %>
+                                            <% if (entry.entry_type === "commission") { %>
+                                                Gross: KSh <%= Number(entry.gross_amount).toLocaleString("en-KE") %><br>
+                                                Commission: KSh <%= Number(entry.commission_amount).toLocaleString("en-KE") %><br>
+                                                Rate: <%= Number(entry.commission_rate) %>% + KSh <%= Number(entry.commission_flat_fee).toLocaleString("en-KE") %><br>
+                                                Seller net: KSh <%= Number(entry.seller_net_amount).toLocaleString("en-KE") %><br>
+                                                Payment: <%= entry.payment_status || "—" %>
+                                            <% } else { %>
+                                                Payout amount: KSh <%= Number(entry.seller_net_amount).toLocaleString("en-KE") %><br>
+                                                Payout number: <%= entry.payout_phone || "—" %><br>
+                                                Request status: <%= entry.status %>
+                                            <% } %>
+                                        </div>
+                                    </details>
+                                </td>
+                            </tr>
+                        <% }); %></tbody>
+                    </table>
+                    <p class="ledger-empty" id="ledger-empty" hidden>No transactions match this filter.</p>
+                </div>
+                <div class="ledger-pagination">
+                    <span id="ledger-page-summary">Showing transactions</span>
+                    <div class="ledger-pagination-controls">
+                        <button type="button" id="ledger-previous" disabled>← Previous</button>
+                        <span id="ledger-page-number">1</span>
+                        <button type="button" id="ledger-next" disabled>Next →</button>
+                    </div>
+                </div>
+            <% } else { %><p class="ledger-empty">Transactions will appear here as orders and payout requests are created.</p><% } %>
+            </div>
+        </section>
+
+        <section class="section-card moderation-panel" id="product-moderation">
+            <div class="moderation-heading">
+                <h2>Product review</h2>
+                <p>Review product listings before they go live. Approve suitable items or reject listings with a clear reason for the seller.</p>
+            </div>
+            <% if (productModerationUpdated) { %><p class="moderation-results" role="status">Product moderation updated.</p><% } %>
+            <div class="moderation-content">
+                <% if (moderationProducts && moderationProducts.length) { %>
+                    <form id="moderation-status-form" action="/admin" method="GET">
+                        <input type="hidden" name="deliveryStatus" value="<%= logisticsStatus %>">
+                    </form>
+                    <form id="bulk-moderation-form" action="/admin/products/moderation/bulk-approve" method="POST">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <div class="moderation-toolbar">
+                            <label class="moderation-search-wrap" for="moderation-search">
+                                Search products
+                                <input id="moderation-search" type="search" placeholder="Search products or sellers...">
+                            </label>
+                            <button class="moderation-search-button" type="button" id="moderation-search-button">Search</button>
+                            <label class="moderation-filter" for="productStatus">
+                                Status
+                                <select id="productStatus" name="productStatus" form="moderation-status-form">
+                                    <% ["pending", "approved", "rejected"].forEach(function(status) { %>
+                                        <option value="<%= status %>" <%= productModerationFilter === status ? "selected" : "" %>><%= status[0].toUpperCase() + status.slice(1) %></option>
+                                    <% }); %>
+                                </select>
+                            </label>
+                            <label class="moderation-filter" for="moderation-category">
+                                Category
+                                <select id="moderation-category">
+                                    <option value="all">All categories</option>
+                                    <% [...new Set(moderationProducts.map(function(product) { return product.category_name || "Uncategorized"; }))].sort().forEach(function(category) { %>
+                                        <option value="<%= category.toLowerCase() %>"><%= category %></option>
+                                    <% }); %>
+                                </select>
+                            </label>
+                            <button class="moderation-bulk-button" type="submit" id="moderation-bulk-button" disabled>✓ Approve selected</button>
+                        </div>
+                    </form>
+                        <div class="moderation-table-wrap">
+                            <table class="moderation-table">
+                                <thead>
+                                    <tr>
+                                        <th class="moderation-check-cell"><input type="checkbox" id="moderation-select-all" aria-label="Select all visible products"></th>
+                                        <th>Product</th><th>Category</th><th>Status</th><th>Fields</th><th>Submitted</th><th>Review</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="moderation-rows"><% moderationProducts.forEach(function(product) {
+                                    const category = product.category_name || "Uncategorized";
+                                    const searchText = `${product.name} ${product.business_name || product.seller_name} ${product.seller_email} ${category}`.toLowerCase();
+                                %>
+                                    <tr data-moderation-row data-category="<%= category.toLowerCase() %>" data-search="<%= searchText %>">
+                                        <td class="moderation-check-cell">
+                                            <% if (product.moderation_status !== "approved") { %>
+                                                <input type="checkbox" name="productIds" value="<%= product.id %>" form="bulk-moderation-form" aria-label="Select <%= product.name %>">
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <div class="moderation-product-cell">
+                                                <% if (product.image) { %><img src="<%= product.image %>" alt=""><% } else { %><span class="moderation-product-placeholder" aria-hidden="true">□</span><% } %>
+                                                <span>
+                                                    <strong class="moderation-product-name" title="<%= product.name %>"><%= product.name %></strong>
+                                                    <span class="moderation-product-meta">#<%= product.id %> · KSh <%= Number(product.price).toLocaleString("en-KE") %> · stock <%= product.stock %></span>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="moderation-workflow"><%= category %></td>
+                                        <td><span class="moderation-status <%= product.moderation_status %>"><%= product.moderation_status %></span></td>
+                                        <td aria-label="Listing fields">
+                                            <span class="<%= product.name && product.description && product.price > 0 ? 'moderation-field-check' : 'moderation-field-missing' %>" title="Title, description and price"><%= product.name && product.description && product.price > 0 ? "✓" : "×" %></span>
+                                            <span class="<%= product.image ? 'moderation-field-check' : 'moderation-field-missing' %>" title="Product image"><%= product.image ? "✓" : "×" %></span>
+                                        </td>
+                                        <td class="moderation-date"><%= new Date(product.created_at).toLocaleDateString("en-KE", { month: "short", day: "numeric" }) %></td>
+                                        <td>
+                                            <details class="moderation-actions">
+                                                <summary>Review</summary>
+                                                <div>
+                                                    <strong><%= product.business_name || product.seller_name %></strong>
+                                                    <span class="moderation-product-meta"><%= product.seller_email %></span>
+                                                    <% if (product.moderation_note) { %><p class="moderation-product-meta">Note: <%= product.moderation_note %></p><% } %>
+                                                    <p class="moderation-product-meta"><%= product.description || "No description provided." %></p>
+                                                    <% if (product.moderation_status !== "approved") { %>
+                                                        <form class="moderation-form" action="/admin/products/<%= product.id %>/moderation" method="POST">
+                                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                            <input type="hidden" name="status" value="approved">
+                                                            <button type="submit">Approve listing</button>
+                                                        </form>
+                                                    <% } %>
+                                                    <% if (product.moderation_status !== "rejected") { %>
+                                                        <form class="moderation-form" action="/admin/products/<%= product.id %>/moderation" method="POST">
+                                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                            <input type="hidden" name="status" value="rejected">
+                                                            <label for="moderation-note-<%= product.id %>">Reason for rejection</label>
+                                                            <textarea id="moderation-note-<%= product.id %>" name="note" maxlength="500" required></textarea>
+                                                            <button class="btn-reject" type="submit">Reject listing</button>
+                                                        </form>
+                                                    <% } %>
+                                                </div>
+                                            </details>
+                                        </td>
+                                    </tr>
+                                <% }); %></tbody>
+                            </table>
+                            <p class="moderation-empty" id="moderation-empty" hidden>No products match your search and category.</p>
+                        </div>
+                        <p class="moderation-results" id="moderation-results"><%= moderationProducts.length %> products in this review list.</p>
+                <% } else { %>
+                    <form class="moderation-toolbar" id="moderation-status-form-empty" action="/admin" method="GET">
+                        <label class="moderation-filter" for="productStatusEmpty">
+                            Status
+                            <select id="productStatusEmpty" name="productStatus">
+                                <% ["pending", "approved", "rejected"].forEach(function(status) { %>
+                                    <option value="<%= status %>" <%= productModerationFilter === status ? "selected" : "" %>><%= status[0].toUpperCase() + status.slice(1) %></option>
+                                <% }); %>
+                            </select>
+                        </label>
+                        <button class="moderation-search-button" type="submit">Show products</button>
+                        <input type="hidden" name="deliveryStatus" value="<%= logisticsStatus %>">
+                    </form>
+                    <p class="moderation-empty">No products match this status. Choose another status to review more listings.</p>
+                <% } %>
+            </div>
+        </section>
+
+        <section class="section-card" id="delivery-monitor">
+            <h2>Logistics and delivery monitor</h2>
+            <p class="muted">Review every customer order by seller shipment, monitor pending through delivery, flag shipments without an update for 7 days, and record complaint follow-ups.</p>
+            <% if (deliveryComplaintUpdated) { %><p role="status">Delivery complaint follow-up saved.</p><% } %>
+            <div class="delivery-summary">
+                <div class="delivery-stat"><span>Customer orders</span><strong><%= marketplaceStats.order_count.toLocaleString("en-KE") %></strong></div>
+                <div class="delivery-stat"><span>Pending / preparing</span><strong><%= deliveryStats.pending_count.toLocaleString("en-KE") %></strong></div>
+                <div class="delivery-stat"><span>Dispatched</span><strong><%= deliveryStats.dispatched_count.toLocaleString("en-KE") %></strong></div>
+                <div class="delivery-stat"><span>Delivered</span><strong><%= deliveryStats.delivered_count.toLocaleString("en-KE") %></strong></div>
+                <div class="delivery-stat <%= deliveryStats.delayed_count || deliveryStats.open_complaint_count ? "is-alert" : "" %>"><span>Delayed / open complaints</span><strong><%= deliveryStats.delayed_count.toLocaleString("en-KE") %> / <%= deliveryStats.open_complaint_count.toLocaleString("en-KE") %></strong></div>
+            </div>
+            <form class="delivery-filter" action="/admin" method="GET">
+                <label for="deliveryStatus">Show customer orders
+                    <select id="deliveryStatus" name="deliveryStatus">
+                        <% [
+                            ["all", "All customer orders"],
+                            ["pending", "Pending"],
+                            ["paid", "Paid, awaiting dispatch"],
+                            ["processing", "Preparing"],
+                            ["shipped", "Dispatched / in transit"],
+                            ["delivered", "Delivered"],
+                            ["delayed", "Delayed (7+ days without update)"],
+                            ["issues", "Missing or unsuccessful / complaints"],
+                            ["cancelled", "Cancelled"]
+                        ].forEach(function(option) { %>
+                            <option value="<%= option[0] %>" <%= logisticsStatus === option[0] ? "selected" : "" %>><%= option[1] %></option>
+                        <% }); %>
+                    </select>
+                </label>
+                <input type="hidden" name="deliveryPage" value="1">
+                <button type="submit">Filter orders</button>
+            </form>
+            <% if (deliveryMonitor && deliveryMonitor.length) { %>
+                <div class="table-wrap">
+                    <table class="delivery-table">
+                        <thead><tr><th>Order / items</th><th>Customer / destination</th><th>Seller</th><th>Order status</th><th>Shipment / tracking</th><th>Delivery health</th><th>Payment</th><th>Last update</th><th>Complaint follow-up</th></tr></thead>
+                        <tbody><% deliveryMonitor.forEach(function(delivery) {
+                            const delayed = Number(delivery.is_delayed) === 1;
+                            const hasIssue = Number(delivery.has_delivery_issue) === 1;
+                        %>
+                            <tr class="<%= delayed ? "delivery-delayed" : "" %>">
+                                <td><strong>#<%= delivery.order_id %></strong><div class="muted"><%= delivery.product_names || "" %></div><div class="muted">KSh <%= Number(delivery.total).toLocaleString("en-KE") %></div><div class="muted">Placed <%= new Date(delivery.created_at).toLocaleDateString("en-KE") %></div></td>
+                                <td><strong><%= delivery.customer_name %></strong><div class="muted"><%= [delivery.shipping_address, delivery.shipping_city, delivery.shipping_region, delivery.shipping_postal_code].filter(Boolean).join(", ") || "No address saved" %></div><div class="muted"><%= delivery.recipient_phone || "" %></div></td>
+                                <td><%= delivery.business_name %></td>
+                                <td><span class="status <%= delivery.order_status %>"><%= delivery.order_status === "shipped" ? "dispatched" : delivery.order_status %></span></td>
+                                <td><span class="status <%= delivery.fulfillment_status %>"><%= delivery.fulfillment_status === "shipped" ? "in transit" : delivery.fulfillment_status %></span><% if (delivery.tracking_number) { %><div class="muted">Tracking: <%= delivery.tracking_number %></div><% } %></td>
+                                <td><span class="delivery-health <%= hasIssue ? "issue" : delayed ? "delayed" : "" %>"><%= hasIssue ? (delivery.order_status === "cancelled" ? "Unsuccessful" : delivery.complaint_id && delivery.complaint_status !== "resolved" ? "Complaint open" : "Payment issue") : delayed ? "Delayed · 7+ days" : "On track" %></span></td>
+                                <td>
+                                    <%= delivery.payment_method || "—" %> · <%= delivery.payment_status || "unpaid" %>
+                                    <% if (delivery.order_status === "delivered" && delivery.payment_method === "cash_on_delivery" && delivery.payment_status === "pending") { %>
+                                        <form action="/admin/orders/<%= delivery.order_id %>/record-cod-payment" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <button type="submit">Record cash received</button>
+                                        </form>
+                                    <% } %>
+                                </td>
+                                <td><%= delivery.fulfillment_updated_at ? new Date(delivery.fulfillment_updated_at).toLocaleString("en-KE") : "No shipment update" %></td>
+                                <td class="delivery-case">
+                                    <% if (delivery.complaint_id) { %>
+                                        <details>
+                                            <summary><span class="delivery-complaint-status <%= delivery.complaint_status %>"><%= delivery.complaint_status %></span> · View case</summary>
+                                            <div class="delivery-case-content">
+                                                <p><strong>Customer issue:</strong> <%= delivery.complaint %></p>
+                                                <% if (delivery.follow_up_note) { %><p><strong>Latest follow-up:</strong> <%= delivery.follow_up_note %></p><% } %>
+                                                <form action="/admin/orders/<%= delivery.order_id %>/delivery-complaint" method="POST">
+                                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                    <input type="hidden" name="sellerId" value="<%= delivery.seller_id %>">
+                                                    <input type="hidden" name="action" value="update">
+                                                    <input type="hidden" name="deliveryStatus" value="<%= logisticsStatus %>">
+                                                    <input type="hidden" name="deliveryPage" value="<%= currentDeliveryPage %>">
+                                                    <label for="delivery-case-status-<%= delivery.complaint_id %>">Follow-up status</label>
+                                                    <select id="delivery-case-status-<%= delivery.complaint_id %>" name="status">
+                                                        <% ["open", "investigating", "resolved"].forEach(function(status) { %>
+                                                            <option value="<%= status %>" <%= delivery.complaint_status === status ? "selected" : "" %>><%= status %></option>
+                                                        <% }); %>
+                                                    </select>
+                                                    <label for="delivery-follow-up-<%= delivery.complaint_id %>">Follow-up notes</label>
+                                                    <textarea id="delivery-follow-up-<%= delivery.complaint_id %>" name="followUpNote" maxlength="1000" placeholder="Contact attempts or resolution details"><%= delivery.follow_up_note || "" %></textarea>
+                                                    <button class="<%= delivery.complaint_status === "resolved" ? "delivery-case-resolve" : "" %>" type="submit">Save follow-up</button>
+                                                </form>
+                                            </div>
+                                        </details>
+                                    <% } else { %>
+                                        <details>
+                                            <summary>Log delivery complaint</summary>
+                                            <div class="delivery-case-content">
+                                                <form action="/admin/orders/<%= delivery.order_id %>/delivery-complaint" method="POST">
+                                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                    <input type="hidden" name="sellerId" value="<%= delivery.seller_id %>">
+                                                    <input type="hidden" name="action" value="log">
+                                                    <input type="hidden" name="deliveryStatus" value="<%= logisticsStatus %>">
+                                                    <input type="hidden" name="deliveryPage" value="<%= currentDeliveryPage %>">
+                                                    <label for="delivery-complaint-<%= delivery.order_id %>-<%= delivery.seller_id %>">Customer complaint / missing delivery</label>
+                                                    <textarea id="delivery-complaint-<%= delivery.order_id %>-<%= delivery.seller_id %>" name="complaint" maxlength="2000" required placeholder="Summarize the customer's report"></textarea>
+                                                    <button type="submit">Save complaint</button>
+                                                </form>
+                                            </div>
+                                        </details>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %></tbody>
+                    </table>
+                </div>
+                <div class="delivery-pagination">
+                    <span>Showing <%= (currentDeliveryPage - 1) * 25 + 1 %>–<%= Math.min(currentDeliveryPage * 25, deliveryTotalRows) %> of <%= deliveryTotalRows %> seller shipments · <%= marketplaceStats.order_count %> customer orders</span>
+                    <nav aria-label="Delivery monitor pages">
+                        <a href="/admin?deliveryStatus=<%= encodeURIComponent(logisticsStatus) %>&deliveryPage=<%= Math.max(1, currentDeliveryPage - 1) %>#delivery-monitor" aria-disabled="<%= currentDeliveryPage <= 1 %>">← Previous</a>
+                        <span>Page <%= currentDeliveryPage %> of <%= deliveryTotalPages %></span>
+                        <a href="/admin?deliveryStatus=<%= encodeURIComponent(logisticsStatus) %>&deliveryPage=<%= Math.min(deliveryTotalPages, currentDeliveryPage + 1) %>#delivery-monitor" aria-disabled="<%= currentDeliveryPage >= deliveryTotalPages %>">Next →</a>
+                    </nav>
+                </div>
+            <% } else { %><p class="muted">No deliveries match this filter.</p><% } %>
+        </section>
+
+        <section class="section-card payout-panel" id="payout-requests">
+            <div class="payout-heading">
+                <h2>Payout requests</h2>
+                <p class="muted">Review vendor withdrawal requests, confirm available seller balances, and record payouts only after payment verification.</p>
+            </div>
+            <% if (payoutUpdated) { %>
+                <p class="moderation-results" role="status">Payout request updated.</p>
+            <% } %>
+            <div class="payout-summary">
+                <div class="payout-stat pending">
+                    <span>Pending payouts · <%= payoutStats.pending_count.toLocaleString("en-KE") %> requests</span>
+                    <strong>KSh <%= payoutStats.pending_amount.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></strong>
+                </div>
+                <div class="payout-stat">
+                    <span>Paid out · last 30 days</span>
+                    <strong>KSh <%= payoutStats.paid_last_30_days.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></strong>
+                </div>
+                <div class="payout-stat">
+                    <span>Total paid out · all time</span>
+                    <strong>KSh <%= payoutStats.paid_all_time.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></strong>
+                </div>
+                <div class="payout-stat">
+                    <span>Outstanding vendor payments</span>
+                    <strong>KSh <%= payoutStats.outstanding_vendor_payments.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></strong>
+                </div>
+            </div>
+            <div class="payout-history-panel">
+                <div class="payout-history-toolbar">
+                    <h3>All payout requests and history</h3>
+                    <nav class="payout-status-tabs" aria-label="Filter payout requests">
+                        <% [
+                            ["all", "All", payoutStats.all_count],
+                            ["pending", "Pending", payoutStats.pending_count],
+                            ["completed", "Completed", payoutStats.completed_count],
+                            ["failed", "Failed", payoutStats.failed_count]
+                        ].forEach(function(tab) { %>
+                            <a href="/admin?payoutStatus=<%= tab[0] %>&payoutPage=1#payout-requests" <%= payoutStatusFilter === tab[0] ? 'aria-current="page"' : "" %>><%= tab[1] %> (<%= tab[2] %>)</a>
+                        <% }); %>
+                    </nav>
+                </div>
+                <% if (payoutRequests && payoutRequests.length) { %>
+                    <div class="table-wrap">
+                        <table class="payout-table">
+                            <thead>
+                                <tr><th>Request ID</th><th>Date</th><th>Seller</th><th>Method / destination</th><th>Amount</th><th>Available balance</th><th>Status</th><th>Actions / details</th></tr>
+                            </thead>
+                            <tbody>
+                                <% payoutRequests.forEach(function(request) { %>
+                                    <tr>
+                                        <td class="payout-id">PO-<%= String(request.id).padStart(4, "0") %></td>
+                                        <td><%= new Date(request.created_at).toLocaleDateString("en-CA") %><span class="ledger-secondary">Updated <%= new Date(request.updated_at || request.created_at).toLocaleDateString("en-CA") %></span></td>
+                                        <td><strong><%= request.business_name || request.seller_name %></strong><span class="ledger-secondary"><%= request.seller_email %></span></td>
+                                        <td>M-Pesa<span class="ledger-secondary"><%= request.payout_phone %></span></td>
+                                        <td class="ledger-amount">KSh <%= Number(request.amount).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                                        <td class="payout-balance">KSh <%= Number(request.available_balance).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                                        <td><span class="status <%= request.status === "paid" ? "paid" : request.status === "rejected" ? "rejected" : request.status === "approved" ? "approved" : "pending" %>"><%= request.status === "paid" ? "completed" : request.status === "rejected" ? "failed" : request.status %></span></td>
+                                        <td>
+                                            <div class="payout-actions">
+                                                <% if (request.status === "pending") { %>
+                                                    <div class="actions-row">
+                                                        <form action="/admin/payouts/<%= request.id %>/status" method="POST">
+                                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                            <input type="hidden" name="status" value="approved">
+                                                            <input type="hidden" name="payoutStatus" value="<%= payoutStatusFilter %>">
+                                                            <input type="hidden" name="payoutPage" value="<%= currentPayoutPage %>">
+                                                            <button class="btn-approve" type="submit">Approve</button>
+                                                        </form>
+                                                        <form action="/admin/payouts/<%= request.id %>/status" method="POST">
+                                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                            <input type="hidden" name="status" value="rejected">
+                                                            <input type="hidden" name="payoutStatus" value="<%= payoutStatusFilter %>">
+                                                            <input type="hidden" name="payoutPage" value="<%= currentPayoutPage %>">
+                                                            <button class="btn-reject" type="submit">Reject</button>
+                                                        </form>
+                                                    </div>
+                                                <% } else if (request.status === "approved") { %>
+                                                    <form action="/admin/payouts/<%= request.id %>/status" method="POST">
+                                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                        <input type="hidden" name="status" value="paid">
+                                                        <input type="hidden" name="payoutStatus" value="<%= payoutStatusFilter %>">
+                                                        <input type="hidden" name="payoutPage" value="<%= currentPayoutPage %>">
+                                                        <label class="payout-verify"><input type="checkbox" name="paymentVerified" value="confirmed" required> I verified that this transfer was sent to the seller.</label>
+                                                        <button class="btn-approve" type="submit">Mark paid</button>
+                                                    </form>
+                                                <% } else { %>
+                                                    <details class="ledger-details">
+                                                        <summary>View payout record</summary>
+                                                        <div>
+                                                            Seller: <%= request.seller_name %><br>
+                                                            Requested: <%= new Date(request.created_at).toLocaleString("en-KE") %><br>
+                                                            <%= request.status === "paid" ? "Paid" : "Rejected" %>: <%= new Date(request.updated_at || request.created_at).toLocaleString("en-KE") %><br>
+                                                            Destination: <%= request.payout_phone %>
+                                                        </div>
+                                                    </details>
+                                                    <span class="muted">No further actions</span>
+                                                <% } %>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="payout-pagination">
+                        <span>Showing <%= (currentPayoutPage - 1) * 25 + 1 %>–<%= Math.min(currentPayoutPage * 25, payoutTotalRows) %> of <%= payoutTotalRows %> requests</span>
+                        <nav aria-label="Payout history pages">
+                            <a href="/admin?payoutStatus=<%= encodeURIComponent(payoutStatusFilter) %>&payoutPage=<%= Math.max(1, currentPayoutPage - 1) %>#payout-requests" aria-disabled="<%= currentPayoutPage <= 1 %>">← Previous</a>
+                            <span>Page <%= currentPayoutPage %> of <%= payoutTotalPages %></span>
+                            <a href="/admin?payoutStatus=<%= encodeURIComponent(payoutStatusFilter) %>&payoutPage=<%= Math.min(payoutTotalPages, currentPayoutPage + 1) %>#payout-requests" aria-disabled="<%= currentPayoutPage >= payoutTotalPages %>">Next →</a>
+                        </nav>
+                    </div>
+                <% } else { %>
+                    <p class="muted">No payout requests match this filter. Past completed and rejected requests remain available in their respective tabs.</p>
+                <% } %>
+            </div>
+        </section>
+        <section class="section-card payout-panel" id="seller-order-rejections">
+            <div class="payout-heading">
+                <h2>Seller-rejected order items</h2>
+                <p class="muted">Sellers return rejected items to stock and forfeit their item earnings. Review each pending customer payment adjustment here. The platform does not issue automatic refunds.</p>
+            </div>
+            <% if (sellerOrderRejectionUpdated) { %><p class="moderation-results" role="status">Payment adjustment was recorded.</p><% } %>
+            <% if (sellerOrderRejections && sellerOrderRejections.length) { %>
+                <div class="table-wrap">
+                    <table class="payout-table">
+                        <thead><tr><th>Order</th><th>Seller</th><th>Customer</th><th>Items / amount</th><th>Reason</th><th>Payment follow-up</th></tr></thead>
+                        <tbody><% sellerOrderRejections.forEach(function(rejection) { %>
+                            <tr>
+                                <td>#<%= rejection.order_id %></td>
+                                <td><%= rejection.seller_name %></td>
+                                <td><strong><%= rejection.customer_name %></strong><span class="ledger-secondary"><%= rejection.customer_email %></span></td>
+                                <td><%= rejection.rejected_products %><span class="ledger-secondary">KSh <%= Number(rejection.item_amount).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></span></td>
+                                <td><%= rejection.rejection_reason %></td>
+                                <td>
+                                    <% if (rejection.admin_adjustment_status === "pending") { %>
+                                        <form action="/admin/seller-order-rejections/<%= rejection.order_id %>/<%= rejection.seller_id %>/status" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <label>Manual adjustment note (no transfer is initiated here)</label>
+                                            <textarea name="note" maxlength="500" required></textarea>
+                                            <button type="submit">Record as handled</button>
+                                        </form>
+                                    <% } else { %>
+                                        <span class="status approved">Handled</span><span class="ledger-secondary"><%= rejection.admin_note %></span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %></tbody>
+                    </table>
+                </div>
+            <% } else { %><p class="muted">No seller order rejections need review.</p><% } %>
+        </section>
+
+        <section class="section-card payout-panel" id="seller-review-reports">
+            <div class="payout-heading">
+                <h2>Seller-reported customer reviews</h2>
+                <p class="muted">Review reports are referrals for admin moderation; reporting does not hide or delete a customer review.</p>
+            </div>
+            <% if (sellerReviewReportUpdated) { %><p class="moderation-results" role="status">Review report updated.</p><% } %>
+            <% if (sellerReviewReports && sellerReviewReports.length) { %>
+                <div class="table-wrap"><table class="payout-table">
+                    <thead><tr><th>Product / reviewer</th><th>Rating / review</th><th>Seller report</th><th>Status / action</th></tr></thead>
+                    <tbody><% sellerReviewReports.forEach(function(report) { %><tr>
+                        <td><strong><%= report.product_name %></strong><span class="ledger-secondary"><%= report.customer_name %> · reported by <%= report.seller_name %></span></td>
+                        <td><%= report.rating %>/5 · <%= report.comment || "No written review" %></td>
+                        <td><%= report.reason %></td>
+                        <td>
+                            <% if (report.status === "pending") { %>
+                                <form action="/admin/review-reports/<%= report.id %>/status" method="POST">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <button type="submit" name="status" value="reviewed">Reviewed</button>
+                                    <button type="submit" name="status" value="dismissed">Dismiss</button>
+                                </form>
+                            <% } else { %><span class="status <%= report.status %>"><%= report.status %></span><% } %>
+                        </td>
+                    </tr><% }); %></tbody>
+                </table></div>
+            <% } else { %><p class="muted">No seller review reports.</p><% } %>
+        </section>
+
+        <section class="section-card payout-panel" id="refund-requests">
+            <div class="payout-heading">
+                <h2>Customer refund requests</h2>
+                <p class="muted">Review requests for delivered, paid orders. Approved refunds are transferred manually outside this website; confirm the transfer before marking a request refunded.</p>
+            </div>
+            <% if (refundUpdated) { %><p class="moderation-results" role="status">Refund request updated.</p><% } %>
+            <% if (refundRequests && refundRequests.length) { %>
+                <div class="table-wrap">
+                    <table class="payout-table">
+                        <thead><tr><th>Request / order</th><th>Customer</th><th>Amount</th><th>Reason / seller investigation</th><th>Status</th><th>Review / manual payout</th></tr></thead>
+                        <tbody>
+                            <% refundRequests.forEach(function(request) { %>
+                                <tr>
+                                    <td>RF-<%= String(request.id).padStart(4, "0") %><span class="ledger-secondary">Order #<%= request.order_id %> · <%= new Date(request.created_at).toLocaleDateString("en-KE") %></span></td>
+                                    <td><strong><%= request.customer_name %></strong><span class="ledger-secondary"><%= request.customer_email %></span></td>
+                                    <td class="ledger-amount">KSh <%= Number(request.order_total).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                                    <td><%= request.reason %>
+                                        <% if (request.seller_response) { %><p><strong>Seller response:</strong> <%= request.seller_response %></p><% } %>
+                                        <% if (request.evidence_key) { %><a href="/admin/refunds/<%= request.id %>/evidence">Download seller evidence</a><% } %>
+                                    </td>
+                                    <td><span class="status <%= request.status %>"><%= request.status %></span><% if (request.admin_note) { %><span class="ledger-secondary"><%= request.admin_note %></span><% } %></td>
+                                    <td>
+                                        <% if (request.status === "pending") { %>
+                                            <form action="/admin/refunds/<%= request.id %>/status" method="POST" class="payout-actions">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                <textarea name="note" maxlength="500" required placeholder="Approval note or rejection reason"></textarea>
+                                                <button class="btn-approve" type="submit" name="status" value="approved">Approve</button>
+                                                <button class="btn-reject" type="submit" name="status" value="rejected">Reject</button>
+                                            </form>
+                                        <% } else if (request.status === "approved") { %>
+                                            <form action="/admin/refunds/<%= request.id %>/status" method="POST" class="payout-actions">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                <textarea name="note" maxlength="500" required placeholder="Manual transfer reference or verification note"></textarea>
+                                                <button class="btn-approve" type="submit" name="status" value="refunded">Mark transferred</button>
+                                            </form>
+                                        <% } else { %><span class="muted">No further actions</span><% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %><p class="muted">No customer refund requests have been submitted.</p><% } %>
+        </section>
+        </main>
+    </div>
+    <script nonce="<%= cspNonce %>">
+        (() => {
+            const moderationRows = Array.from(document.querySelectorAll("[data-moderation-row]"));
+            const moderationSearch = document.getElementById("moderation-search");
+            const moderationCategory = document.getElementById("moderation-category");
+            const moderationSelectAll = document.getElementById("moderation-select-all");
+            const moderationBulkButton = document.getElementById("moderation-bulk-button");
+            const moderationResults = document.getElementById("moderation-results");
+            const moderationEmpty = document.getElementById("moderation-empty");
+            const moderationStatus = document.getElementById("productStatus");
+            const moderationStatusForm = document.getElementById("moderation-status-form");
+            const moderationSearchButton = document.getElementById("moderation-search-button");
+            const productCheckboxes = moderationRows.flatMap((row) =>
+                Array.from(row.querySelectorAll('input[name="productIds"]'))
+            );
+
+            function updateModerationSelection() {
+                if (moderationBulkButton) {
+                    moderationBulkButton.disabled = !productCheckboxes.some((checkbox) => checkbox.checked);
+                }
+                if (moderationSelectAll) {
+                    const visibleCheckboxes = productCheckboxes.filter((checkbox) => !checkbox.closest("tr").hidden);
+                    moderationSelectAll.checked = visibleCheckboxes.length > 0 &&
+                        visibleCheckboxes.every((checkbox) => checkbox.checked);
+                    moderationSelectAll.indeterminate = visibleCheckboxes.some((checkbox) => checkbox.checked) &&
+                        !moderationSelectAll.checked;
+                }
+            }
+
+            function filterModerationRows() {
+                const query = moderationSearch ? moderationSearch.value.trim().toLowerCase() : "";
+                const category = moderationCategory ? moderationCategory.value : "all";
+                let visibleCount = 0;
+                moderationRows.forEach((row) => {
+                    const matches = (!query || row.dataset.search.includes(query)) &&
+                        (category === "all" || row.dataset.category === category);
+                    row.hidden = !matches;
+                    if (matches) visibleCount += 1;
+                });
+                if (moderationResults) {
+                    moderationResults.textContent = `${visibleCount} of ${moderationRows.length} products in this review list.`;
+                }
+                if (moderationEmpty) moderationEmpty.hidden = visibleCount > 0;
+                updateModerationSelection();
+            }
+
+            if (moderationSearch) moderationSearch.addEventListener("input", filterModerationRows);
+            if (moderationCategory) moderationCategory.addEventListener("change", filterModerationRows);
+            if (moderationSearchButton) moderationSearchButton.addEventListener("click", filterModerationRows);
+            if (moderationStatus && moderationStatusForm) {
+                moderationStatus.addEventListener("change", () => moderationStatusForm.submit());
+            }
+            if (moderationSelectAll) {
+                moderationSelectAll.addEventListener("change", () => {
+                    productCheckboxes.forEach((checkbox) => {
+                        if (!checkbox.closest("tr").hidden) checkbox.checked = moderationSelectAll.checked;
+                    });
+                    updateModerationSelection();
+                });
+            }
+            productCheckboxes.forEach((checkbox) => checkbox.addEventListener("change", updateModerationSelection));
+            const bulkModerationForm = document.getElementById("bulk-moderation-form");
+            if (bulkModerationForm) {
+                bulkModerationForm.addEventListener("submit", (event) => {
+                    if (!productCheckboxes.some((checkbox) => checkbox.checked)) {
+                        event.preventDefault();
+                        return;
+                    }
+                    if (!window.confirm("Approve all selected product listings?")) event.preventDefault();
+                });
+            }
+
+            const rows = Array.from(document.querySelectorAll("[data-ledger-row]"));
+            const tabs = Array.from(document.querySelectorAll("[data-ledger-filter]"));
+            const search = document.getElementById("ledger-search");
+            const previous = document.getElementById("ledger-previous");
+            const next = document.getElementById("ledger-next");
+            const pageSummary = document.getElementById("ledger-page-summary");
+            const pageNumber = document.getElementById("ledger-page-number");
+            const emptyState = document.getElementById("ledger-empty");
+            if (!rows.length || !search || !previous || !next || !pageSummary || !pageNumber) return;
+
+            const pageSize = 10;
+            let selectedStatus = "all";
+            let currentPage = 1;
+
+            function renderLedger() {
+                const query = search.value.trim().toLowerCase();
+                const matchingRows = rows.filter((row) =>
+                    (selectedStatus === "all" || row.dataset.status === selectedStatus) &&
+                    (!query || row.dataset.search.includes(query))
+                );
+                const pageCount = Math.max(1, Math.ceil(matchingRows.length / pageSize));
+                currentPage = Math.min(currentPage, pageCount);
+                const firstIndex = (currentPage - 1) * pageSize;
+                const visibleRows = new Set(matchingRows.slice(firstIndex, firstIndex + pageSize));
+
+                rows.forEach((row) => {
+                    row.hidden = !visibleRows.has(row);
+                });
+                pageSummary.textContent = matchingRows.length
+                    ? `Showing ${firstIndex + 1}–${Math.min(firstIndex + pageSize, matchingRows.length)} of ${matchingRows.length} matching transactions`
+                    : "Showing 0 transactions";
+                pageNumber.textContent = `${currentPage} / ${pageCount}`;
+                previous.disabled = currentPage <= 1;
+                next.disabled = currentPage >= pageCount;
+                if (emptyState) emptyState.hidden = matchingRows.length > 0;
+            }
+
+            tabs.forEach((tab) => {
+                tab.addEventListener("click", () => {
+                    selectedStatus = tab.dataset.ledgerFilter;
+                    currentPage = 1;
+                    tabs.forEach((item) => item.setAttribute("aria-pressed", String(item === tab)));
+                    renderLedger();
+                });
+            });
+            search.addEventListener("input", () => {
+                currentPage = 1;
+                renderLedger();
+            });
+            previous.addEventListener("click", () => {
+                currentPage -= 1;
+                renderLedger();
+            });
+            next.addEventListener("click", () => {
+                currentPage += 1;
+                renderLedger();
+            });
+            renderLedger();
+        })();
+    </script>
+    </body>
+    </html>

@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Dashboard | The Marketplace</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 12px;
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            background-image:
+                linear-gradient(rgba(15, 23, 42, 0.62), rgba(15, 23, 42, 0.62)),
+                url("https://i.pinimg.com/736x/e7/c2/14/e7c2140dbb07836b61c2a68c11b51575.jpg");
+            background-position: center;
+            background-size: cover;
+            background-attachment: fixed;
+            color: #172033;
+        }
+        .topbar {
+            max-width: 1180px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            background: #172554;
+            color: white;
+            padding: 14px 18px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+        }
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .brand-logo {
+            display: block;
+            max-height: 54px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 16px rgba(14, 116, 144, 0.2));
+        }
+        .topbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .topbar-nav a,
+        .topbar-nav button {
+            color: white;
+            text-decoration: none;
+            font: inherit;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+        .topbar-nav form {
+            margin: 0;
+        }
+        main {
+            max-width: 1440px;
+            margin: 12px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px #00000012;
+        }
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 230px minmax(0, 1fr);
+            align-items: start;
+            gap: 20px;
+        }
+        .dashboard-sidebar {
+            position: sticky;
+            top: 12px;
+            max-height: calc(100vh - 24px);
+            overflow-y: auto;
+        }
+        .dashboard-content { min-width: 0; }
+        h1 { color: #172554; }
+        .actions { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+        a, button {
+            color: #2563eb;
+            font: inherit;
+        }
+        button {
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 14px;
+        }
+        .panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+        }
+        .notice {
+            padding: 12px;
+            border-radius: 8px;
+            background: #eff6ff;
+            color: #1e40af;
+            line-height: 1.5;
+        }
+        .seller-message {
+            margin: 12px 0;
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+        }
+        .seller-message p { overflow-wrap: anywhere; }
+        .sale-product {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 180px;
+        }
+        .sale-product-image {
+            width: 52px;
+            height: 52px;
+            flex: 0 0 52px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: #e2e8f0;
+        }
+        .sale-product-name {
+            color: #172554;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .sale-product-name:hover { text-decoration: underline; }
+        .sale-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            color: #334155;
+            font-size: 12px;
+            text-transform: capitalize;
+        }
+        .sale-status.pending { background: #fef3c7; color: #92400e; }
+        .sale-status.paid,
+        .sale-status.delivered { background: #dcfce7; color: #166534; }
+        .sale-status.processing { background: #dbeafe; color: #1d4ed8; }
+        .sale-status.shipped { background: #ede9fe; color: #6d28d9; }
+        .sale-status.cancelled { background: #fee2e2; color: #991b1b; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin: 12px 0;
+        }
+        .stat-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .stat-box h3 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: #475569;
+        }
+        .stat-box strong {
+            font-size: 24px;
+            color: #172554;
+        }
+        form {
+            display: grid;
+            gap: 10px;
+        }
+        label { font-weight: 600; display: block; margin-bottom: 6px; }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: inherit;
+        }
+        textarea { min-height: 100px; resize: vertical; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .muted { color: #64748b; }
+        .product-thumbnail {
+            display: block;
+            width: 96px;
+            height: 72px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+        .product-thumbnail.is-hidden { display: none; }
+        .business-logo-preview {
+            width: 96px;
+            height: 96px;
+            object-fit: cover;
+            border-radius: 50%;
+            background: #e2e8f0;
+        }
+        .business-logo-preview.is-hidden { display: none; }
+        .product-image-input { min-width: 220px; }
+        .table-wrap { overflow-x: auto; }
+        .section-nav {
+            display: grid;
+            gap: 4px;
+            margin: 0;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+        .section-nav a {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 40px;
+            padding: 8px 9px;
+            border-radius: 7px;
+            color: #1d4ed8;
+            text-decoration: none;
+        }
+        .section-nav a:hover,
+        .section-nav a:focus-visible { background: #dbeafe; }
+        .section-nav-icon {
+            width: 17px;
+            height: 17px;
+            flex: 0 0 17px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.8;
+        }
+        .dashboard-section { margin: 14px 0; scroll-margin-top: 16px; }
+        .seller-review {
+            margin: 12px 0;
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+        }
+        .rating { color: #b45309; letter-spacing: 0.08em; }
+        .status-pill {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            font-size: 12px;
+            text-transform: capitalize;
+        }
+        .status-pill.pending { background: #fef3c7; color: #92400e; }
+        .status-pill.approved,
+        .status-pill.paid,
+        .status-pill.shipped { background: #dcfce7; color: #166534; }
+        .status-pill.rejected { background: #fee2e2; color: #991b1b; }
+        .status-pill.processing { background: #dbeafe; color: #1d4ed8; }
+        .dashboard-home { scroll-margin-top: 16px; }
+        .home-stats,
+        .balance-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+            gap: 10px;
+            margin: 12px 0;
+        }
+        .home-stat,
+        .balance-stat {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .home-stat span,
+        .balance-stat span { display: block; color: #64748b; font-size: 13px; }
+        .home-stat strong,
+        .balance-stat strong { display: block; margin-top: 5px; color: #172554; font-size: 21px; }
+        .home-stat.sales { background: #eff6ff; border-color: #bfdbfe; }
+        .home-stat.earnings { background: #f0fdf4; border-color: #bbf7d0; }
+        .home-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .home-overview-card {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .home-overview-card h3 { margin: 0 0 10px; color: #172554; font-size: 16px; }
+        .home-overview-card p { margin: 7px 0; }
+        .home-alert-list { display: grid; gap: 7px; padding-left: 18px; margin: 8px 0; }
+        .home-alert-list li { color: #475569; }
+        .home-warning {
+            margin-top: 8px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #fffbeb;
+            color: #92400e;
+        }
+        .home-warning.error { background: #fef2f2; color: #991b1b; }
+        .home-info { color: #64748b; font-size: 13px; }
+        .home-activity {
+            padding: 9px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .home-activity:last-child { border-bottom: 0; }
+        .home-activity p { margin: 3px 0; overflow-wrap: anywhere; }
+        .home-activity time { color: #64748b; font-size: 12px; }
+        .home-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+        .home-links a { color: #2563eb; }
+        .status-pill.rejected { background: #fee2e2; color: #991b1b; }
+        @media (max-width: 900px) {
+            .dashboard-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 14px; }
+        }
+        @media (max-width: 760px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+            .dashboard-sidebar { position: static; max-height: none; }
+            .section-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+            main { padding: 14px; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .two-col { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand-link" href="/" aria-label="The Marketplace home">
+            <img class="brand-logo" src="/images/multivendor-logo.png" alt="Multi Vendor Marketplace logo">
+        </a>
+        <nav class="topbar-nav" aria-label="Seller dashboard top navigation">
+            <a href="/">Home</a>
+            <a href="/profile">Profile</a>
+            <form action="/auth/logout" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit">Log out</button>
+            </form>
+        </nav>
+    </header>
+
+    <main>
+        <div class="dashboard-layout">
+            <aside class="dashboard-sidebar">
+                <nav class="section-nav" aria-label="Seller dashboard sections">
+                    <svg aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute;overflow:hidden">
+                        <symbol id="seller-icon-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></symbol>
+                        <symbol id="seller-icon-box" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v9l9 5 9-5V8M12 13v9"/></symbol>
+                        <symbol id="seller-icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="10"/></symbol>
+                        <symbol id="seller-icon-cart" viewBox="0 0 24 24"><path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol>
+                        <symbol id="seller-icon-stock" viewBox="0 0 24 24"><path d="M4 19V5m0 14h17"/><path d="m7 15 4-4 3 2 6-7"/><path d="M17 6h3v3"/></symbol>
+                        <symbol id="seller-icon-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 6-7"/></symbol>
+                        <symbol id="seller-icon-ledger" viewBox="0 0 24 24"><path d="M5 3h14v18H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M7 8h10M7 12h10M7 16h6"/></symbol>
+                        <symbol id="seller-icon-wallet" viewBox="0 0 24 24"><path d="M4 6h15a2 2 0 0 1 2 2v12H4a2 2 0 0 1-2-2V6a3 3 0 0 1 3-3h13v3"/><path d="M21 11h-5a2 2 0 0 0 0 4h5"/></symbol>
+                        <symbol id="seller-icon-message" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 4a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.4Z"/></symbol>
+                        <symbol id="seller-icon-refund" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></symbol>
+                        <symbol id="seller-icon-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></symbol>
+                        <symbol id="seller-icon-tag" viewBox="0 0 24 24"><path d="M20 13 13 20 3 10V4h6l11 9Z"/><circle cx="7.5" cy="7.5" r="1"/></symbol>
+                        <symbol id="seller-icon-store" viewBox="0 0 24 24"><path d="M3 10v10h18V10M2 10l2-7h16l2 7a3 3 0 0 1-5 2 3 3 0 0 1-5 0 3 3 0 0 1-5 0 3 3 0 0 1-5-2ZM9 20v-6h6v6"/></symbol>
+                        <symbol id="seller-icon-truck" viewBox="0 0 24 24"><path d="M3 6h12v12H3zM15 10h4l3 3v5h-7"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="18.5" cy="18.5" r="1.5"/></symbol>
+                    </svg>
+                    <a href="#dashboard-home"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-dashboard"></use></svg><span>Seller overview</span></a>
+                    <a href="#product-list"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-box"></use></svg><span>My products</span></a>
+                    <a href="#product-moderation"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-check"></use></svg><span>Product moderation</span></a>
+                    <a href="#orders-management"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-cart"></use></svg><span>Orders management</span></a>
+                    <a href="#inventory-manager"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-stock"></use></svg><span>Inventory</span></a>
+                    <a href="#sales-analytics"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-chart"></use></svg><span>Sales analytics</span></a>
+                    <a href="#seller-ledger"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-ledger"></use></svg><span>Earnings &amp; ledger</span></a>
+                    <a href="#payout-hub"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-wallet"></use></svg><span>Payout requests</span></a>
+                    <a href="#seller-messages"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-message"></use></svg><span>Customer messages</span></a>
+                    <a href="#seller-refunds"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-refund"></use></svg><span>Refund investigations</span></a>
+                    <a href="#seller-reviews"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-star"></use></svg><span>Reviews &amp; ratings</span></a>
+                    <a href="#seller-promotions"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-tag"></use></svg><span>Promotions</span></a>
+                    <a href="#storefront-customization"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-store"></use></svg><span>Store profile &amp; settings</span></a>
+                    <a href="#order-fulfillment"><svg class="section-nav-icon" aria-hidden="true"><use href="#seller-icon-truck"></use></svg><span>Shipping &amp; delivery</span></a>
+                </nav>
+            </aside>
+            <div class="dashboard-content">
+        <h1>Seller Dashboard</h1>
+        <p>Welcome, <%= user.name %>.</p>
+        <section class="dashboard-home" id="dashboard-home" aria-labelledby="dashboard-home-title">
+            <h2 id="dashboard-home-title">Dashboard home</h2>
+            <p class="muted">A quick snapshot of your store activity and what needs attention.</p>
+            <div class="home-stats">
+                <div class="home-stat sales">
+                    <span>Today's sales</span>
+                    <strong>KSh <%= Number(sellerHome.today.sales || 0).toLocaleString("en-KE") %></strong>
+                </div>
+                <div class="home-stat">
+                    <span>Today's orders</span>
+                    <strong><%= Number(sellerHome.today.orders || 0) %></strong>
+                </div>
+                <div class="home-stat earnings">
+                    <span>Today's net earnings</span>
+                    <strong>KSh <%= Number(sellerHome.today.net_earnings || 0).toLocaleString("en-KE") %></strong>
+                </div>
+                <div class="home-stat">
+                    <span>Orders needing fulfillment</span>
+                    <strong><%= sellerHome.pendingFulfillmentOrders %></strong>
+                </div>
+                <div class="home-stat">
+                    <span>Products listed</span>
+                    <strong><%= Number(sellerAnalytics.inventory.product_count || 0) %></strong>
+                </div>
+                <div class="home-stat">
+                    <span>Completed paid orders</span>
+                    <strong><%= Number(sellerAnalytics.completedOrders || 0) %></strong>
+                </div>
+            </div>
+
+            <div class="home-overview-card">
+                <h3>Balance overview</h3>
+                <div class="balance-stats">
+                    <div class="balance-stat">
+                        <span>Available balance</span>
+                        <strong>KSh <%= Number(sellerHome.availableBalance).toLocaleString("en-KE") %></strong>
+                    </div>
+                    <div class="balance-stat">
+                        <span>Pending balance</span>
+                        <strong>KSh <%= Number(sellerHome.pendingBalance).toLocaleString("en-KE") %></strong>
+                    </div>
+                    <div class="balance-stat">
+                        <span>Reserved balance</span>
+                        <strong>KSh <%= Number(sellerHome.reservedBalance).toLocaleString("en-KE") %></strong>
+                    </div>
+                    <div class="balance-stat">
+                        <span>Paid out</span>
+                        <strong>KSh <%= Number(sellerHome.paidOutBalance).toLocaleString("en-KE") %></strong>
+                    </div>
+                </div>
+                <p><strong>Next payout:</strong> No date scheduled</p>
+                <p class="home-info">Payouts are requested by you and reviewed/marked paid by an admin; automatic payout dates are not configured.</p>
+                <div class="home-links"><a href="#payout-hub">View payout requests</a></div>
+            </div>
+
+            <div class="home-overview-grid">
+                <section class="home-overview-card" aria-labelledby="home-inventory-title">
+                    <h3 id="home-inventory-title">Inventory alerts</h3>
+                    <p><strong><%= Number(sellerAnalytics.inventory.low_stock_count || 0) %></strong> low-stock item(s)</p>
+                    <p><strong><%= Number(sellerAnalytics.inventory.out_of_stock_count || 0) %></strong> out-of-stock item(s)</p>
+                    <% const homeInventoryAlerts = products.filter(function(product) { return Number(product.stock) <= 5; }).slice(0, 4); %>
+                    <% if (homeInventoryAlerts.length) { %>
+                        <ul class="home-alert-list">
+                            <% homeInventoryAlerts.forEach(function(product) { %>
+                                <li><%= product.name %> — <%= Number(product.stock) === 0 ? "out of stock" : `${product.stock} left` %></li>
+                            <% }); %>
+                        </ul>
+                    <% } else { %>
+                        <p class="home-info">No low-stock alerts.</p>
+                    <% } %>
+                    <div class="home-links"><a href="#inventory-manager">Manage inventory</a></div>
+                </section>
+
+                <section class="home-overview-card" aria-labelledby="home-activity-title">
+                    <h3 id="home-activity-title">Recent buyer messages</h3>
+                    <% if (sellerHome.recentBuyerMessages.length) { %>
+                        <% sellerHome.recentBuyerMessages.forEach(function(message) { %>
+                            <div class="home-activity">
+                                <strong><%= message.sender_name %> · Order #<%= message.order_id %></strong>
+                                <p><%= message.message %></p>
+                                <time datetime="<%= new Date(message.created_at).toISOString() %>"><%= new Date(message.created_at).toLocaleString("en-KE") %></time>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <p class="home-info">No recent buyer messages.</p>
+                    <% } %>
+                    <div class="home-links"><a href="#seller-messages">Open customer messages</a></div>
+                </section>
+
+                <section class="home-overview-card" aria-labelledby="home-review-title">
+                    <h3 id="home-review-title">Recent review alerts</h3>
+                    <% if (sellerHome.recentReviewAlerts.length) { %>
+                        <% sellerHome.recentReviewAlerts.forEach(function(review) { %>
+                            <div class="home-activity">
+                                <strong><%= review.product_name %> · <span class="rating"><%= "★".repeat(Number(review.rating)) %><%= "☆".repeat(5 - Number(review.rating)) %></span></strong>
+                                <p><%= review.customer_name %><%= review.comment ? `: ${review.comment}` : " left a rating." %></p>
+                                <time datetime="<%= new Date(review.created_at).toISOString() %>"><%= new Date(review.created_at).toLocaleString("en-KE") %></time>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <p class="home-info">No recent reviews.</p>
+                    <% } %>
+                    <div class="home-links"><a href="#customer-reviews">View customer reviews</a></div>
+                </section>
+
+                <section class="home-overview-card" aria-labelledby="home-account-title">
+                    <h3 id="home-account-title">Account status &amp; notices</h3>
+                    <% if (!sellerAccount.email_verified) { %>
+                        <p class="home-warning error">Your email address is not verified.</p>
+                    <% } %>
+                    <% if (sellerProfile.status !== "approved") { %>
+                        <p class="home-warning <%= sellerProfile.status === 'rejected' ? 'error' : '' %>">Seller application status: <strong><%= sellerProfile.status || "pending" %></strong>.</p>
+                    <% } %>
+                    <% const rejectedProductCount = products.filter(function(product) { return product.moderation_status === "rejected"; }).length; %>
+                    <% if (rejectedProductCount > 0) { %>
+                        <p class="home-warning error"><strong><%= rejectedProductCount %></strong> product(s) need changes after moderation review.</p>
+                    <% } %>
+                    <p class="home-info">KYC, payout-number verification, policy violations, disputes, and returns are not tracked by the current dashboard.</p>
+                    <% if (sellerAccount.email_verified && sellerProfile.status === "approved" && rejectedProductCount === 0) { %>
+                        <p class="home-info">No account or product moderation warnings right now.</p>
+                    <% } %>
+                    <div class="home-links">
+                        <a href="#storefront-customization">Business profile</a>
+                        <a href="#product-list">Product status</a>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <% if (sellerProfile.status !== "approved") { %>
+            <p class="notice" role="status">Your seller application is <strong><%= sellerProfile.status %></strong>. Product management is available after admin approval.</p>
+        <% } %>
+        <% if (websiteUpdated || profileUpdated) { %>
+            <p class="notice" role="status">Your business profile was updated.</p>
+        <% } %>
+        <% if (fulfillmentUpdated) { %>
+            <p class="notice" role="status">Order fulfillment was updated.</p>
+        <% } %>
+        <% if (payoutRequested) { %>
+            <p class="notice" role="status">Your payout request was sent for admin review. No funds are transferred automatically.</p>
+        <% } %>
+        <% if (orderDecision) { %>
+            <p class="notice" role="status"><%= orderDecision === "accepted" ? "You accepted your items in the order." : "You rejected your items. The items were returned to stock and the admin must coordinate the customer's payment adjustment; no refund was issued automatically." %></p>
+        <% } %>
+        <% if (promotionUpdated) { %><p class="notice" role="status">Product promotion settings were saved.</p><% } %>
+        <% if (refundResponseUpdated) { %><p class="notice" role="status">Your refund investigation response was sent to the admin.</p><% } %>
+        <% if (reviewAction) { %><p class="notice" role="status"><%= reviewAction === "reported" ? "The review was reported to the admin team." : "Your response to the review was saved." %></p><% } %>
+        <% if (shoppingDisabled) { %>
+            <p class="notice" role="status">Seller accounts can preview the marketplace, but shopping and checkout are only available to customers.</p>
+        <% } %>
+
+        <section class="panel dashboard-section" id="sales-analytics">
+            <h2>Sales and revenue analytics</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <h3>Revenue-eligible orders</h3>
+                    <strong><%= sellerAnalytics.completedOrders %></strong>
+                </div>
+                <div class="stat-box">
+                    <h3>Gross revenue</h3>
+                    <strong>KSh <%= Number(sellerAnalytics.grossRevenue).toLocaleString("en-KE") %></strong>
+                </div>
+                <div class="stat-box">
+                    <h3>Revenue · last 30 days</h3>
+                    <strong>KSh <%= Number(sellerAnalytics.revenueLast30Days).toLocaleString("en-KE") %></strong>
+                </div>
+                <div class="stat-box">
+                    <h3>Revenue · last 7 days</h3>
+                    <strong>KSh <%= Number(sellerAnalytics.revenueLast7Days).toLocaleString("en-KE") %></strong>
+                </div>
+                <div class="stat-box">
+                    <h3>Cancelled orders</h3>
+                    <strong><%= Number(sellerAnalytics.cancelledOrders) %></strong>
+                </div>
+                <div class="stat-box">
+                    <h3>Units sold · last 30 days</h3>
+                    <strong><%= sellerAnalytics.unitsLast30Days %></strong>
+                </div>
+            </div>
+            <p class="muted">Revenue includes orders marked paid, processing, shipped, or delivered; pending and cancelled orders are excluded. Values are gross item sales before any platform fees.</p>
+            <h3>Monthly revenue · last 6 months</h3>
+            <% if (monthlyRevenue && monthlyRevenue.length) { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Month</th><th>Orders</th><th>Revenue</th></tr></thead>
+                        <tbody>
+                            <% monthlyRevenue.forEach(function(month) { %>
+                                <tr>
+                                    <td><%= month.month %></td>
+                                    <td><%= month.orders %></td>
+                                    <td>KSh <%= Number(month.revenue).toLocaleString("en-KE") %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p class="muted">Monthly sales will appear here after paid orders.</p>
+            <% } %>
+            <h3>Best-selling products</h3>
+            <% if (bestSellingProducts && bestSellingProducts.length) { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Product</th><th>Units sold</th><th>Gross sales</th></tr></thead>
+                        <tbody><% bestSellingProducts.forEach(function(product) { %>
+                            <tr><td><a href="/products/<%= product.id %>"><%= product.name %></a></td><td><%= Number(product.units_sold) %></td><td>KSh <%= Number(product.gross_sales).toLocaleString("en-KE") %></td></tr>
+                        <% }); %></tbody>
+                    </table>
+                </div>
+            <% } else { %><p class="muted">Product rankings appear when paid sales are recorded.</p><% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="seller-promotions">
+            <h2>Promotions &amp; discounts</h2>
+            <p class="muted">Schedule seller-funded discounts for approved listings. Active promotions update the product page, cart, checkout total, and order commission split. Times are East Africa Time. Discount range: 1–80%.</p>
+            <% if (promotionUpdated) { %><p class="notice" role="status">Promotion settings saved.</p><% } %>
+            <% const promotionProducts = products.filter(function(product) { return product.moderation_status === "approved"; }); %>
+            <% if (promotionProducts.length) { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Product</th><th>Promotion</th><th>Schedule (EAT)</th><th>Performance</th><th>Update</th></tr></thead>
+                        <tbody><% promotionProducts.forEach(function(product) { %>
+                            <tr>
+                                <td><strong><%= product.name %></strong><div class="muted">List price KSh <%= Number(product.price).toLocaleString("en-KE") %></div></td>
+                                <td><% if (Number(product.promotion_discount_percent) > 0) { %><span class="status-pill approved"><%= Number(product.promotion_discount_percent) %>% off</span><% } else { %><span class="muted">No scheduled offer</span><% } %></td>
+                                <td><%= product.promotion_starts_at ? new Date(`${product.promotion_starts_at.replace(" ", "T")}+03:00`).toLocaleString("en-KE") : "—" %><br><span class="muted">to <%= product.promotion_ends_at ? new Date(`${product.promotion_ends_at.replace(" ", "T")}+03:00`).toLocaleString("en-KE") : "—" %></span></td>
+                                <td>Promotional units: <%= Number(product.promotion_units_sold || 0) %><br><span class="muted">KSh <%= Number(product.promotion_gross_sales || 0).toLocaleString("en-KE") %> sales</span></td>
+                                <td>
+                                    <form action="/seller/products/<%= product.id %>/promotion" method="POST">
+                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                        <label for="promotion-discount-<%= product.id %>">Discount %</label>
+                                        <input id="promotion-discount-<%= product.id %>" name="discountPercent" type="number" min="0" max="80" step="1" value="<%= Number(product.promotion_discount_percent) %>" required>
+                                        <label for="promotion-start-<%= product.id %>">Starts (EAT)</label>
+                                        <input id="promotion-start-<%= product.id %>" name="startsAt" type="datetime-local" value="<%= product.promotion_starts_at ? product.promotion_starts_at.replace(' ', 'T').slice(0, 16) : '' %>">
+                                        <label for="promotion-end-<%= product.id %>">Ends (EAT)</label>
+                                        <input id="promotion-end-<%= product.id %>" name="endsAt" type="datetime-local" value="<%= product.promotion_ends_at ? product.promotion_ends_at.replace(' ', 'T').slice(0, 16) : '' %>">
+                                        <button type="submit">Save promotion</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }); %></tbody>
+                    </table>
+                </div>
+            <% } else { %><p class="muted">An approved product is required before scheduling a promotion.</p><% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="product-moderation">
+            <h2>Product moderation status</h2>
+            <div class="stats">
+                <% ["pending", "approved", "rejected"].forEach(function(status) { %>
+                    <div class="stat-box"><h3><%= status.charAt(0).toUpperCase() + status.slice(1) %></h3><strong><%= products.filter(function(product) { return product.moderation_status === status; }).length %></strong></div>
+                <% }); %>
+            </div>
+            <p class="muted">Rejected listings show the admin’s reason in My Products. Edit the listing and save it to resubmit for review; a resubmitted product returns to pending approval.</p>
+            <% const rejectedSellerProducts = products.filter(function(product) { return product.moderation_status === "rejected"; }); %>
+            <% if (rejectedSellerProducts.length) { %>
+                <ul class="home-alert-list"><% rejectedSellerProducts.forEach(function(product) { %><li><a href="#product-list"><%= product.name %></a>: <%= product.moderation_note || "Review the listing and resubmit it." %></li><% }); %></ul>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="storefront-customization">
+            <h2>Storefront customization</h2>
+            <p class="muted">Add a logo, description, and secure HTTPS website customers can see on your products.</p>
+            <form action="/seller/business-profile" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div>
+                    <label for="businessWebsite">Website URL</label>
+                    <input
+                        id="businessWebsite"
+                        name="businessWebsite"
+                        type="url"
+                        maxlength="2048"
+                        placeholder="https://example.com"
+                        autocomplete="url"
+                        value="<%= sellerProfile.business_website || '' %>"
+                    >
+                </div>
+                <div>
+                    <label for="businessDescription">Business description</label>
+                    <textarea
+                        id="businessDescription"
+                        name="businessDescription"
+                        maxlength="1000"
+                        placeholder="Tell customers about your business"
+                    ><%= sellerProfile.business_description || '' %></textarea>
+                </div>
+                <div>
+                    <label for="businessLogo">Business logo (JPEG, PNG, or WebP; up to 2 MB)</label>
+                    <img
+                        id="business-logo-preview"
+                        class="business-logo-preview<%= sellerProfile.business_logo ? '' : ' is-hidden' %>"
+                        src="<%= sellerProfile.business_logo || '' %>"
+                        data-original-src="<%= sellerProfile.business_logo || '' %>"
+                        alt="Business logo preview"
+                    >
+                    <input
+                        id="businessLogo"
+                        name="businessLogo"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        data-image-preview="business-logo-preview"
+                    >
+                    <% if (sellerProfile.business_logo) { %>
+                        <label>
+                            <input type="checkbox" name="removeLogo" value="true" style="width:auto;">
+                            Remove current logo
+                        </label>
+                    <% } %>
+                </div>
+                <button type="submit">Save business profile</button>
+            </form>
+        </section>
+
+        <section class="dashboard-section" id="inventory-manager">
+        <h2>Inventory and product manager</h2>
+        <p><a href="#product-list">Manage existing products</a></p>
+        <div class="stats">
+            <div class="stat-box">
+                <h3>Products listed</h3>
+                <strong><%= Number(sellerAnalytics.inventory.product_count || 0) %></strong>
+            </div>
+            <% if (stockMovements && stockMovements.length) { %>
+                <section class="panel" aria-labelledby="stock-movement-title">
+                    <h3 id="stock-movement-title">Recent stock changes</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Time</th><th>Product</th><th>Previous</th><th>Current</th><th>Reason</th></tr></thead>
+                            <tbody><% stockMovements.forEach(function(movement) { %>
+                                <tr><td><%= new Date(movement.created_at).toLocaleString("en-KE") %></td><td><%= movement.product_name %></td><td><%= movement.previous_stock %></td><td><%= movement.new_stock %></td><td><%= movement.change_reason.replace(/-/g, " ") %></td></tr>
+                            <% }); %></tbody>
+                        </table>
+                    </div>
+                </section>
+            <% } %>
+            <div class="stat-box">
+                <h3>Units in stock</h3>
+                <strong><%= Number(sellerAnalytics.inventory.units_in_stock || 0) %></strong>
+            </div>
+            <div class="stat-box">
+                <h3>Low-stock products (5 or fewer)</h3>
+                <strong><%= Number(sellerAnalytics.inventory.low_stock_count || 0) %></strong>
+            </div>
+        </div>
+        <div class="dashboard-grid">
+            <section class="panel">
+                <h2>Add a new product</h2>
+                <p class="muted">Add product details, set a price in KSh, and upload a product photo.</p>
+                <form action="/seller/products" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <div>
+                        <label for="name">Product name</label>
+                        <input id="name" name="name" type="text" maxlength="200" required>
+                    </div>
+
+                    <div>
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" maxlength="5000"></textarea>
+                    </div>
+
+                    <div class="two-col">
+                        <div>
+                            <label for="price">Price</label>
+                            <input id="price" name="price" type="number" min="0.01" max="99999999.99" step="0.01" required>
+                        </div>
+                        <div>
+                            <label for="stock">Stock</label>
+                            <input id="stock" name="stock" type="number" min="0" max="1000000" step="1" required>
+                        </div>
+                    </div>
+
+                    <div class="two-col">
+                        <div>
+                            <label for="categoryId">Category</label>
+                            <select id="categoryId" name="categoryId">
+                                <% if (categories && categories.length) { %>
+                                    <% categories.forEach(function(category) { %>
+                                        <option value="<%= category.id %>"><%= category.name %></option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="image">Product image (JPEG, PNG, or WebP; up to 5 MB)</label>
+                            <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" data-image-preview="new-product-image-preview">
+                            <img id="new-product-image-preview" class="product-thumbnail is-hidden" alt="Selected product photo preview">
+                        </div>
+                    </div>
+
+                    <button type="submit">Save product</button>
+                </form>
+            </section>
+
+            <section class="panel">
+                <h2>Recent sales</h2>
+                <% if (!recentSales || recentSales.length === 0) { %>
+                    <p class="muted">No sales yet. Once customers place orders, they will appear here.</p>
+                <% } else { %>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% recentSales.forEach(function(sale) { %>
+                                <tr>
+                                    <td>
+                                        <strong>#<%= sale.order_id %></strong>
+                                        <div class="muted"><%= new Date(sale.created_at).toLocaleDateString("en-KE") %></div>
+                                    </td>
+                                    <td>
+                                        <div class="sale-product">
+                                            <% if (sale.image) { %>
+                                                <img class="sale-product-image" src="<%= sale.image %>" alt="<%= sale.product_name %>">
+                                            <% } else { %>
+                                                <div class="sale-product-image" aria-hidden="true"></div>
+                                            <% } %>
+                                            <a class="sale-product-name" href="/products/<%= sale.product_id %>"><%= sale.product_name %></a>
+                                        </div>
+                                    </td>
+                                    <td><%= sale.quantity %></td>
+                                    <td><span class="sale-status <%= sale.status %>"><%= sale.status %></span></td>
+                                    <td>KSh <%= Number(sale.line_total).toLocaleString("en-KE") %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </section>
+        </div>
+        </section>
+
+        <section class="panel dashboard-section" id="order-fulfillment">
+            <h2>Order fulfillment center</h2>
+            <h3 id="orders-management">Orders management · accept, prepare, and dispatch your items</h3>
+            <% if (sellerHome.pendingFulfillmentOrders > 0) { %>
+                <p class="notice" role="status"><%= sellerHome.pendingFulfillmentOrders %> confirmed paid order<%= sellerHome.pendingFulfillmentOrders === 1 ? "" : "s" %> need fulfillment. M-Pesa payment numbers are kept private from sellers.</p>
+            <% } %>
+            <% if (fulfillmentOrders && fulfillmentOrders.length) { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Order</th><th>Customer &amp; delivery</th><th>Order status</th><th>Your decision</th><th>Your fulfillment</th><th>Update</th></tr>
+                        </thead>
+                        <tbody>
+                            <% fulfillmentOrders.forEach(function(order) { %>
+                                <tr>
+                                    <td>
+                                        <strong>#<%= order.order_id %></strong>
+                                        <div class="muted"><%= new Date(order.created_at).toLocaleDateString("en-KE") %></div>
+                                    </td>
+                                    <td>
+                                        <%= order.customer_name %>
+                                        <% if (order.shipping_address) { %>
+                                            <div class="muted"><%= [order.shipping_address, order.shipping_city, order.shipping_region, order.shipping_postal_code].filter(Boolean).join(", ") %></div>
+                                        <% } %>
+                                    </td>
+                                    <td><span class="status-pill <%= order.order_status %>"><%= order.order_status %></span></td>
+                                    <td>
+                                        <% if (!order.seller_decision) { %>
+                                            <span class="status-pill pending">Decision needed</span>
+                                        <% } else { %>
+                                            <span class="status-pill <%= order.seller_decision === 'rejected' ? 'rejected' : 'approved' %>"><%= order.seller_decision %></span>
+                                            <% if (order.decision_note) { %><div class="muted"><%= order.decision_note %></div><% } %>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <span class="status-pill <%= order.fulfillment_status %>"><%= order.fulfillment_status %></span>
+                                        <% if (order.tracking_number) { %><div class="muted">Tracking: <%= order.tracking_number %></div><% } %>
+                                    </td>
+                                    <td>
+                                        <% if (!order.seller_decision) { %>
+                                            <form action="/seller/orders/<%= order.order_id %>/decision" method="POST">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                <button type="submit" name="decision" value="accepted">Accept my items</button>
+                                            </form>
+                                            <form action="/seller/orders/<%= order.order_id %>/decision" method="POST">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                <label for="reject-reason-<%= order.order_id %>">Reason if you cannot fulfill</label>
+                                                <textarea id="reject-reason-<%= order.order_id %>" name="note" maxlength="500" required></textarea>
+                                                <button type="submit" name="decision" value="rejected">Reject my items</button>
+                                            </form>
+                                        <% } else if (order.seller_decision === "rejected") { %>
+                                            <p class="muted">Items returned to stock. The admin must coordinate any customer payment adjustment; no refund is automatic.</p>
+                                        <% } else if (order.fulfillment_status !== "shipped") { %>
+                                            <form action="/seller/orders/<%= order.order_id %>/fulfillment" method="POST">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                <% if (order.fulfillment_status === "pending") { %>
+                                                    <input type="hidden" name="status" value="processing">
+                                                    <button type="submit">Start preparing</button>
+                                                <% } else { %>
+                                                    <input type="hidden" name="status" value="shipped">
+                                                    <label for="tracking-<%= order.order_id %>">Tracking number (optional)</label>
+                                                    <input id="tracking-<%= order.order_id %>" name="trackingNumber" maxlength="100">
+                                                    <button type="submit">Mark shipped</button>
+                                                <% } %>
+                                            </form>
+                                        <% } else { %>
+                                            <span class="muted">Fulfillment complete</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p class="muted">Paid orders that need fulfillment will appear here.</p>
+            <% } %>
+            <p class="muted">Fulfillment status is tracked per seller, so one seller’s shipment does not overwrite another seller’s progress on a multi-vendor order.</p>
+        </section>
+
+        <section class="panel dashboard-section" id="payout-hub">
+            <h2>Earnings and payout request hub</h2>
+            <p><strong>Gross paid sales:</strong> KSh <%= Number(sellerAnalytics.earningsGross).toLocaleString("en-KE") %></p>
+            <p><strong>Marketplace commission:</strong> KSh <%= Number(sellerAnalytics.commissionPaid).toLocaleString("en-KE") %></p>
+            <p><strong>Your net earnings:</strong> KSh <%= Number(sellerAnalytics.earnings).toLocaleString("en-KE") %></p>
+            <p><strong>Already requested or paid out:</strong> KSh <%= Number(sellerAnalytics.reservedPayouts).toLocaleString("en-KE") %></p>
+            <p><strong>Available to request:</strong> KSh <%= Number(sellerAnalytics.availablePayout).toLocaleString("en-KE") %></p>
+            <p class="muted">Earnings use the per-item seller share from successful payments. Requests are reviewed by an admin and paid manually; submitting a request does not transfer money.</p>
+            <% if (sellerAnalytics.availablePayout > 0) { %>
+                <form action="/seller/payouts" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <div class="two-col">
+                        <div>
+                            <label for="payout-amount">Request amount (KSh)</label>
+                            <input id="payout-amount" name="amount" type="number" min="0.01" max="<%= sellerAnalytics.availablePayout %>" step="0.01" required>
+                        </div>
+                        <div>
+                            <label for="payout-phone">M-Pesa payout number</label>
+                            <input id="payout-phone" name="payoutPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX" required>
+                        </div>
+                    </div>
+                    <button type="submit">Request payout</button>
+                </form>
+            <% } else { %>
+                <p class="muted">There are no available paid earnings to request yet.</p>
+            <% } %>
+            <h3>Your payout requests</h3>
+            <% if (payoutRequests && payoutRequests.length) { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Requested</th><th>Amount</th><th>M-Pesa number</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <% payoutRequests.forEach(function(request) { %>
+                                <tr>
+                                    <td><%= new Date(request.created_at).toLocaleString("en-KE") %></td>
+                                    <td>KSh <%= Number(request.amount).toLocaleString("en-KE") %></td>
+                                    <td><%= request.payout_phone %></td>
+                                    <td><span class="status-pill <%= request.status %>"><%= request.status %></span></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p class="muted">You have not submitted any payout requests.</p>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="seller-ledger">
+            <h2>Earnings &amp; financial ledger</h2>
+            <p class="muted">Each paid product line shows gross sale, marketplace commission, and seller net. Pending lines are not withdrawable; payouts are recorded separately and processed manually.</p>
+            <div class="stats">
+                <div class="stat-box"><h3>Gross paid sales</h3><strong>KSh <%= Number(sellerAnalytics.earningsGross).toLocaleString("en-KE") %></strong></div>
+                <div class="stat-box"><h3>Marketplace commission</h3><strong>KSh <%= Number(sellerAnalytics.commissionPaid).toLocaleString("en-KE") %></strong></div>
+                <div class="stat-box"><h3>Net seller earnings</h3><strong>KSh <%= Number(sellerAnalytics.earnings).toLocaleString("en-KE") %></strong></div>
+                <div class="stat-box"><h3>Pending earnings</h3><strong>KSh <%= Number(sellerHome.pendingBalance).toLocaleString("en-KE") %></strong></div>
+            </div>
+            <% if (sellerLedger && sellerLedger.length) { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Date / order</th><th>Payment</th><th>Gross sale</th><th>Commission</th><th>Seller net</th><th>Status</th></tr></thead>
+                        <tbody><% sellerLedger.forEach(function(entry) { %>
+                            <tr>
+                                <td><%= new Date(entry.created_at).toLocaleDateString("en-KE") %> · #<%= entry.order_id %></td>
+                                <td><%= entry.payment_status %></td>
+                                <td>KSh <%= Number(entry.gross_amount).toLocaleString("en-KE") %></td>
+                                <td>KSh <%= Number(entry.commission_amount).toLocaleString("en-KE") %></td>
+                                <td>KSh <%= Number(entry.seller_net_amount).toLocaleString("en-KE") %></td>
+                                <td><span class="status-pill <%= entry.status === 'void' ? 'rejected' : entry.status %>"><%= entry.status === "void" ? "reversed" : entry.status %></span></td>
+                            </tr>
+                        <% }); %></tbody>
+                    </table>
+                </div>
+            <% } else { %><p class="muted">Your transaction ledger will appear after orders are created.</p><% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="seller-refunds">
+            <h2>Refund &amp; return investigations</h2>
+            <p class="muted">Share shipment facts and supporting evidence with the admin. Only an admin may approve a refund or record the manual transfer; sellers cannot mark a refund paid.</p>
+            <% if (sellerRefunds && sellerRefunds.length) { %>
+                <% sellerRefunds.forEach(function(refund) { %>
+                    <article class="seller-review">
+                        <h3>Refund request #<%= refund.id %> · Order #<%= refund.order_id %></h3>
+                        <p><strong>Customer:</strong> <%= refund.customer_name %> · <strong>Your products:</strong> <%= refund.seller_products %></p>
+                        <p><strong>Customer request:</strong> <%= refund.reason %></p>
+                        <p><strong>Order/delivery status:</strong> <%= refund.order_status %> · seller shipment <%= refund.seller_fulfillment_status %><% if (refund.tracking_number) { %> · tracking <%= refund.tracking_number %><% } %></p>
+                        <p><strong>Refund status:</strong> <span class="status-pill <%= refund.status %>"><%= refund.status %></span><% if (refund.admin_note) { %> · Admin: <%= refund.admin_note %><% } %></p>
+                        <% if (refund.seller_response) { %><p><strong>Your response:</strong> <%= refund.seller_response %></p><% } %>
+                        <% if (refund.evidence_key) { %><p><a href="/seller/refunds/<%= refund.id %>/evidence">Download submitted evidence</a></p><% } %>
+                        <% if (["pending", "approved"].includes(refund.status)) { %>
+                            <form action="/seller/refunds/<%= refund.id %>/response" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <label for="refund-response-<%= refund.id %>">Shipment investigation / explanation</label>
+                                <textarea id="refund-response-<%= refund.id %>" name="response" maxlength="2000" required><%= refund.seller_response || "" %></textarea>
+                                <label for="refund-evidence-<%= refund.id %>">Supporting evidence (PDF, JPEG, PNG, or WebP; up to 5 MB)</label>
+                                <input id="refund-evidence-<%= refund.id %>" name="evidence" type="file" accept="application/pdf,image/jpeg,image/png,image/webp">
+                                <button type="submit">Send investigation to admin</button>
+                            </form>
+                        <% } %>
+                    </article>
+                <% }); %>
+            <% } else { %>
+                <p class="muted">Refund requests involving your products will appear here.</p>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="seller-reviews">
+            <h2>Customer review feed</h2>
+            <% if (sellerReviews && sellerReviews.length) { %>
+                <% sellerReviews.forEach(function(review) { %>
+                    <article class="seller-review">
+                        <p>
+                            <a class="sale-product-name" href="/products/<%= review.product_id %>"><%= review.product_name %></a>
+                            <span class="rating" aria-label="<%= review.rating %> out of 5 stars"><%= "★".repeat(review.rating) %></span>
+                        </p>
+                        <% if (review.comment) { %><p><%= review.comment %></p><% } else { %><p class="muted">No written comment.</p><% } %>
+                        <p class="muted">By <%= review.customer_name %> · <%= new Date(review.created_at).toLocaleDateString("en-KE") %></p>
+                        <% if (review.seller_response) { %><p class="notice"><strong>Your public response:</strong> <%= review.seller_response %></p><% } %>
+                        <form action="/seller/reviews/<%= review.id %>/respond" method="POST">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <label for="review-response-<%= review.id %>">Respond publicly</label>
+                            <textarea id="review-response-<%= review.id %>" name="response" maxlength="1000" required><%= review.seller_response || "" %></textarea>
+                            <button type="submit"><%= review.seller_response ? "Update response" : "Respond to review" %></button>
+                        </form>
+                        <% if (review.report_status !== "pending") { %>
+                            <form action="/seller/reviews/<%= review.id %>/report" method="POST">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <label for="review-report-<%= review.id %>">Report inappropriate review to admin</label>
+                                <textarea id="review-report-<%= review.id %>" name="reason" maxlength="1000" required placeholder="Explain the policy concern"></textarea>
+                                <button type="submit">Report review</button>
+                            </form>
+                        <% } else { %><p class="muted">This review report is awaiting admin review.</p><% } %>
+                    </article>
+                <% }); %>
+            <% } else { %>
+                <p class="muted">Customer reviews for your products will appear here.</p>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="seller-messages">
+            <h2>Customer messages</h2>
+            <% if (messageSent) { %>
+                <p class="notice" role="status">Your reply was sent.</p>
+            <% } %>
+            <% if (!sellerMessages || sellerMessages.length === 0) { %>
+                <p class="muted">Order-related customer messages will appear here.</p>
+            <% } else { %>
+                <% sellerMessages.forEach(function(message) { %>
+                    <article class="seller-message">
+                        <p>
+                            <strong>Order #<%= message.order_id %></strong>
+                            <span class="muted"> · <%= message.sender_name %> · <%= new Date(message.created_at).toLocaleString("en-KE") %></span>
+                        </p>
+                        <p><%= message.message %></p>
+                        <% if (!message.sent_by_seller) { %>
+                            <form action="/seller/messages" method="POST">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <input type="hidden" name="orderId" value="<%= message.order_id %>">
+                                <input type="hidden" name="customerId" value="<%= message.customer_id %>">
+                                <label for="reply-<%= message.order_id %>-<%= message.customer_id %>">Reply</label>
+                                <textarea id="reply-<%= message.order_id %>-<%= message.customer_id %>" name="message" maxlength="1000" required></textarea>
+                                <button type="submit">Send reply</button>
+                            </form>
+                        <% } %>
+                    </article>
+                <% }); %>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="product-list">
+            <h2>Your products</h2>
+            <% if (!products || products.length === 0) { %>
+                <p class="muted">You have not added any products yet.</p>
+            <% } else { %>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Photo</th>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% products.forEach(function(product) { %>
+                                <tr>
+                                    <td>
+                                        <form id="edit-product-<%= product.id %>" action="/seller/products/<%= product.id %>/update" method="POST" enctype="multipart/form-data">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" form="edit-product-<%= product.id %>">
+                                            <input type="hidden" name="categoryId" value="<%= product.category_id || '' %>" form="edit-product-<%= product.id %>">
+                                        </form>
+                                        <img
+                                            id="product-image-preview-<%= product.id %>"
+                                            class="product-thumbnail<%= product.image ? '' : ' is-hidden' %>"
+                                            src="<%= product.image || '' %>"
+                                            data-original-src="<%= product.image || '' %>"
+                                            alt="<%= product.name %>"
+                                        >
+                                        <span id="product-no-image-<%= product.id %>" class="muted<%= product.image ? ' is-hidden' : '' %>">No photo</span>
+                                        <label for="product-image-<%= product.id %>">Change photo</label>
+                                        <input class="product-image-input" id="product-image-<%= product.id %>" name="image" type="file" accept="image/jpeg,image/png,image/webp" form="edit-product-<%= product.id %>" data-image-preview="product-image-preview-<%= product.id %>" data-empty-message="product-no-image-<%= product.id %>">
+                                    </td>
+                                    <td>
+                                        <label for="product-name-<%= product.id %>">Name</label>
+                                        <input id="product-name-<%= product.id %>" name="name" type="text" maxlength="200" value="<%= product.name %>" form="edit-product-<%= product.id %>" required>
+                                        <span class="status-pill <%= product.moderation_status %>"><%= product.moderation_status %></span>
+                                        <% if (product.moderation_note) { %><p class="muted">Admin note: <%= product.moderation_note %></p><% } %>
+                                        <label for="product-description-<%= product.id %>">Description</label>
+                                        <textarea id="product-description-<%= product.id %>" name="description" maxlength="5000" form="edit-product-<%= product.id %>"><%= product.description || '' %></textarea>
+                                    </td>
+                                    <td>
+                                        <label for="product-price-<%= product.id %>">Price (KSh)</label>
+                                        <input id="product-price-<%= product.id %>" name="price" type="number" min="0.01" max="99999999.99" step="0.01" value="<%= product.price %>" form="edit-product-<%= product.id %>" required>
+                                    </td>
+                                    <td>
+                                        <label for="product-stock-<%= product.id %>">Stock</label>
+                                        <input id="product-stock-<%= product.id %>" name="stock" type="number" min="0" max="1000000" step="1" value="<%= product.stock %>" form="edit-product-<%= product.id %>" required>
+                                    </td>
+                                    <td>
+                                        <button type="submit" form="edit-product-<%= product.id %>">Save</button>
+                                        <form action="/seller/products/<%= product.id %>/delete" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <button type="submit">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        </section>
+            </div>
+        </div>
+    </main>
+    <script nonce="<%= cspNonce %>">
+        document.querySelectorAll("input[type='file'][data-image-preview]").forEach((input) => {
+            const preview = document.getElementById(input.dataset.imagePreview);
+            const emptyMessage = input.dataset.emptyMessage
+                ? document.getElementById(input.dataset.emptyMessage)
+                : null;
+            let previewUrl = null;
+
+            input.addEventListener("change", () => {
+                if (previewUrl) {
+                    URL.revokeObjectURL(previewUrl);
+                    previewUrl = null;
+                }
+
+                const file = input.files && input.files[0];
+                if (!file || !file.type.startsWith("image/")) {
+                    if (preview) {
+                        const originalSrc = preview.dataset.originalSrc || "";
+                        if (originalSrc) {
+                            preview.src = originalSrc;
+                            preview.classList.remove("is-hidden");
+                        } else {
+                            preview.removeAttribute("src");
+                            preview.classList.add("is-hidden");
+                        }
+                    }
+                    if (emptyMessage) {
+                        emptyMessage.classList.toggle(
+                            "is-hidden",
+                            Boolean(preview && preview.dataset.originalSrc)
+                        );
+                    }
+                    return;
+                }
+
+                previewUrl = URL.createObjectURL(file);
+                preview.src = previewUrl;
+                preview.classList.remove("is-hidden");
+                if (emptyMessage) {
+                    emptyMessage.classList.add("is-hidden");
+                }
+            });
+        });
+    </script>
+</body>
+</html>

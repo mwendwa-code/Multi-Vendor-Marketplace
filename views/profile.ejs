@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile | The Marketplace</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #172033;
+        }
+        header {
+            background: #172554;
+            color: white;
+            padding: 20px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .brand-logo {
+            display: block;
+            max-height: 72px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 16px rgba(14, 116, 144, 0.2));
+        }
+        nav a, nav button {
+            color: white;
+            text-decoration: none;
+            margin-left: 16px;
+            font: inherit;
+        }
+        .cart-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .cart-icon {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.8;
+        }
+        .cart-badge {
+            background: #f59e0b;
+            color: #111827;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            min-width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+        }
+        nav button {
+            background: transparent;
+            border: 0;
+            cursor: pointer;
+        }
+        main {
+            max-width: 720px;
+            margin: 40px auto;
+            padding: 0 16px 40px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+            padding: 24px;
+        }
+        .field-grid {
+            display: grid;
+            gap: 16px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        input {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: inherit;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: 0;
+            border-radius: 6px;
+            padding: 11px 18px;
+            cursor: pointer;
+            font: inherit;
+        }
+        .meta {
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a class="brand-link" href="/" aria-label="The Marketplace home">
+            <img class="brand-logo" src="/images/multivendor-logo.png" alt="Multi Vendor Marketplace logo">
+        </a>
+        <nav>
+            <a href="/">Home</a>
+            <% if (!user || user.role !== "seller") { %>
+            <a href="/cart" class="cart-link" aria-label="Shopping cart, <%= cartCount %> items" title="Shopping cart">
+                <svg class="cart-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 8H6"></path>
+                    <circle cx="10" cy="20" r="1"></circle>
+                    <circle cx="18" cy="20" r="1"></circle>
+                </svg>
+                <% if (cartCount > 0) { %>
+                    <span class="cart-badge"><%= cartCount %></span>
+                <% } %>
+            </a>
+            <% } %>
+            <% if (user && user.role === 'admin') { %>
+                <a href="/admin">Dashboard</a>
+            <% } else if (user && user.role === 'seller') { %>
+                <a href="/seller">Dashboard</a>
+            <% } else if (user) { %>
+                <a href="/customer">Dashboard</a>
+            <% } %>
+            <form action="/auth/logout" method="POST" style="display:inline;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit">Logout</button>
+            </form>
+        </nav>
+    </header>
+
+    <main>
+        <div class="card">
+            <h1>Profile</h1>
+            <p class="meta">Role: <%= profile.role %></p>
+            <% if (passwordUpdated) { %><p role="status">Password updated successfully.</p><% } %>
+            <form action="/profile" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div class="field-grid">
+                    <div>
+                        <label for="name">Full name</label>
+                        <input id="name" name="name" type="text" maxlength="100" value="<%= profile.name %>" required>
+                    </div>
+
+                    <div>
+                        <label for="email">Email</label>
+                        <input id="email" name="email" type="email" maxlength="150" value="<%= profile.email %>" required>
+                    </div>
+
+                    <% if (profile.role === 'seller') { %>
+                        <div>
+                            <label for="businessName">Business name</label>
+                            <input id="businessName" name="businessName" type="text" maxlength="150" value="<%= profileExtra ? profileExtra.business_name : '' %>">
+                            <% if (profileExtra) { %>
+                                <p class="meta">Seller status: <%= profileExtra.status %></p>
+                            <% } %>
+                        </div>
+                    <% } %>
+
+                    <button type="submit">Save changes</button>
+                </div>
+            </form>
+        </div>
+        <div class="card" style="margin-top: 20px;">
+            <h2>Change password</h2>
+            <form action="/profile/password" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div class="field-grid">
+                    <div>
+                        <label for="currentPassword">Current password</label>
+                        <input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required>
+                    </div>
+                    <div>
+                        <label for="newPassword">New password</label>
+                        <input id="newPassword" name="newPassword" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
+                    </div>
+                    <div>
+                        <label for="confirmPassword">Confirm new password</label>
+                        <input id="confirmPassword" name="confirmPassword" type="password" minlength="8" maxlength="72" autocomplete="new-password" required>
+                    </div>
+                    <button type="submit">Update password</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

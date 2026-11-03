@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= user && user.role === 'buyer' ? 'Buyer Dashboard' : 'Customer Dashboard' %> | The Marketplace</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            flex: 1;
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f5f4ef;
+            color: #172033;
+        }
+        header {
+            background: #f0eee8;
+            color: #1f2937;
+            padding: 14px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .brand-logo {
+            display: block;
+            max-height: 72px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 16px rgba(14, 116, 144, 0.2));
+        }
+        nav a, nav button {
+            color: #1f2937;
+            font: inherit;
+            text-decoration: none;
+            margin-left: 16px;
+        }
+        .cart-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .cart-icon {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.8;
+        }
+        .cart-badge {
+            background: #f59e0b;
+            color: #111827;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            min-width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+        }
+        nav button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+        main {
+            max-width: 1440px;
+            margin: 16px auto;
+            padding: 0 18px 24px;
+        }
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+            align-items: start;
+            gap: 18px;
+        }
+        .dashboard-sidebar {
+            position: sticky;
+            top: 16px;
+            max-height: calc(100vh - 32px);
+            overflow-y: auto;
+            padding: 14px;
+            border: 1px solid #e3e1da;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+        }
+        .dashboard-sidebar h2 {
+            margin: 0 0 12px;
+            color: #172554;
+            font-size: 16px;
+        }
+        .dashboard-content {
+            min-width: 0;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+            padding: 18px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            vertical-align: top;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: capitalize;
+            background: #e2e8f0;
+            color: #334155;
+        }
+        .status.pending { background: #fef3c7; color: #92400e; }
+        .status.paid { background: #dcfce7; color: #166534; }
+        .status.processing { background: #dbeafe; color: #1d4ed8; }
+        .status.shipped { background: #dbeafe; color: #1d4ed8; }
+        .status.cancelled { background: #fee2e2; color: #991b1b; }
+        .muted { color: #64748b; }
+        .primary-link {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .orders {
+            display: grid;
+            gap: 12px;
+        }
+        .order-card {
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+        .order-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 16px;
+            background: #f8fafc;
+        }
+        .order-heading h2 {
+            margin: 0 0 8px;
+            font-size: 18px;
+        }
+        .order-heading p { margin: 4px 0; }
+        .order-total { font-weight: 700; }
+        .order-items {
+            display: grid;
+            gap: 12px;
+            padding: 16px;
+        }
+        .order-item {
+            display: grid;
+            grid-template-columns: 76px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .order-item:last-child {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+        .order-item-image {
+            width: 76px;
+            height: 76px;
+            border-radius: 8px;
+            background: #e2e8f0;
+            object-fit: cover;
+        }
+        .order-item-name {
+            color: #172554;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .order-item-name:hover { text-decoration: underline; }
+        .order-item-price {
+            text-align: right;
+            white-space: nowrap;
+            font-weight: 700;
+        }
+        @media (max-width: 520px) {
+            .order-item {
+                grid-template-columns: 60px minmax(0, 1fr);
+                gap: 10px;
+            }
+            .order-item-image {
+                width: 60px;
+                height: 60px;
+            }
+            .order-item-price {
+                grid-column: 2;
+                text-align: left;
+            }
+        }
+        .notice {
+            padding: 12px;
+            border-radius: 8px;
+            background: #eff6ff;
+            color: #1e40af;
+            line-height: 1.5;
+        }
+        .cancel-order-button {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border: 0;
+            border-radius: 6px;
+            background: #dc2626;
+            color: white;
+            font: inherit;
+            cursor: pointer;
+        }
+        .section-nav {
+            display: grid;
+            gap: 8px;
+        }
+        .section-nav a,
+        .action-button {
+            display: inline-block;
+            padding: 9px 12px;
+            border: 0;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            font: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .section-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            background: white;
+            color: #1d4ed8;
+        }
+        .section-nav-icon {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.8;
+        }
+        .section-nav a:hover,
+        .section-nav a:focus-visible { background: #dbeafe; }
+        .dashboard-section { margin-top: 14px; scroll-margin-top: 16px; }
+        .dashboard-section h2 { margin-top: 0; color: #172554; }
+        .featured-products { margin-top: 14px; overflow: hidden; }
+        .featured-products-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .featured-products-heading h2 { margin: 0; color: #172554; }
+        .featured-products-heading p { margin: 5px 0 0; color: #64748b; }
+        .featured-controls { display: flex; gap: 8px; }
+        .featured-controls button {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #bfdbfe;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .featured-controls button:hover { background: #dbeafe; }
+        .featured-track {
+            display: grid;
+            grid-auto-columns: minmax(210px, 250px);
+            grid-auto-flow: column;
+            gap: 16px;
+            overflow-x: auto;
+            padding: 4px 2px 16px;
+            scroll-snap-type: x mandatory;
+            scrollbar-color: #93c5fd #eff6ff;
+        }
+        .featured-card {
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, .07);
+            scroll-snap-align: start;
+            animation: product-pop 480ms cubic-bezier(.2, .8, .2, 1) both;
+            animation-delay: calc(var(--card-index) * 55ms);
+            transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+        .featured-card:hover {
+            transform: translateY(-5px) scale(1.015);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, .14);
+        }
+        .featured-card-image {
+            display: block;
+            width: 100%;
+            height: 155px;
+            object-fit: cover;
+            background: #e2e8f0;
+        }
+        .featured-card-info { padding: 13px; }
+        .featured-card-info h3 { margin: 0 0 7px; color: #172554; font-size: 17px; }
+        .featured-card-category {
+            display: inline-block;
+            margin-bottom: 7px;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .featured-card-info p { margin: 4px 0; }
+        .featured-card-price { color: #166534; font-size: 19px; font-weight: 700; }
+        .featured-card-seller { color: #64748b; font-size: 13px; }
+        .featured-card-actions { display: flex; gap: 8px; margin-top: 11px; }
+        .featured-card-actions form { flex: 1; margin: 0; }
+        .featured-card-actions a,
+        .featured-card-actions button {
+            flex: 1;
+            width: 100%;
+            padding: 8px 10px;
+            border: 0;
+            border-radius: 7px;
+            background: #2563eb;
+            color: white;
+            font: inherit;
+            font-size: 13px;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .featured-card-actions a { background: #eff6ff; color: #1d4ed8; }
+        .featured-card-actions button:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .featured-toast {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 5;
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: #14532d;
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .25);
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+        .featured-toast.is-visible { opacity: 1; transform: translateY(0); }
+        .engagement-section { margin-top: 14px; scroll-margin-top: 16px; }
+        .engagement-section h2 { margin-top: 0; color: #172554; }
+        .engagement-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 14px;
+        }
+        .engagement-card {
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #fff;
+        }
+        .engagement-card h3 { margin: 0 0 8px; color: #172554; font-size: 17px; }
+        .engagement-card p { margin: 6px 0; }
+        .engagement-card img { width: 100%; height: 145px; object-fit: cover; border-radius: 8px; background: #e2e8f0; }
+        .engagement-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .engagement-actions form { margin: 0; }
+        .engagement-actions button,
+        .engagement-card button,
+        .engagement-card input,
+        .engagement-card select {
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font: inherit;
+        }
+        .engagement-actions button,
+        .engagement-card button { background: #2563eb; border-color: #2563eb; color: #fff; cursor: pointer; }
+        .engagement-card input[type="checkbox"] { width: auto; margin-right: 7px; }
+        .engagement-card label { display: block; margin: 8px 0; }
+        .seller-update-list { display: grid; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
+        .seller-update-item { padding: 11px 12px; border: 1px solid #dbeafe; border-radius: 9px; background: #f5f9ff; }
+        .seller-update-item a { color: #1d4ed8; font-weight: 700; text-decoration: none; }
+        .seller-update-item p { margin: 5px 0 0; color: #64748b; font-size: 11px; }
+        .followed-shop-products { margin-top: 20px; }
+        .followed-shop-products > h3,
+        .seller-update-heading { margin: 16px 0 10px; color: #172554; font-size: 17px; }
+        .followed-product-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+        .followed-product-card { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 10px; padding: 9px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+        .followed-product-card > a:first-child { display: block; }
+        .followed-product-card img { width: 72px; height: 72px; object-fit: cover; border-radius: 7px; background: #f1f5f9; }
+        .followed-product-copy { min-width: 0; }
+        .followed-product-copy > a { display: block; overflow: hidden; color: #1e293b; font-size: 12px; font-weight: 700; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+        .followed-product-copy p { overflow: hidden; margin: 4px 0; color: #64748b; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+        .followed-product-copy strong { color: #1e293b; font-size: 12px; }
+        .engagement-track {
+            display: grid;
+            grid-auto-columns: minmax(190px, 220px);
+            grid-auto-flow: column;
+            gap: 14px;
+            overflow-x: auto;
+            padding: 4px 2px 14px;
+            scroll-snap-type: x mandatory;
+        }
+        .engagement-track > * { scroll-snap-align: start; }
+        .engagement-price { color: #166534; font-size: 18px; font-weight: 700; }
+        .points-highlight { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: baseline; }
+        .points-highlight strong { color: #1d4ed8; font-size: 24px; }
+        .mission-progress { width: 100%; height: 9px; accent-color: #2563eb; }
+        .badge-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; list-style: none; }
+        .badge-list li { padding: 7px 10px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 13px; font-weight: 700; }
+        .wishlist-alert { margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: #eff6ff; color: #1e40af; }
+        .collection-products { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .collection-product { display: inline-flex; gap: 6px; align-items: center; padding: 5px 8px; border-radius: 8px; background: #f1f5f9; }
+        .collection-product img { width: 36px; height: 36px; object-fit: cover; border-radius: 5px; }
+        .collection-add-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; margin-top: 8px; }
+        .collection-add-form select { min-width: 0; padding: 7px 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #334155; font: inherit; font-size: 11px; }
+        .collection-add-form button { padding: 7px 9px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; }
+        .collection-add-form button:disabled { background: #94a3b8; cursor: not-allowed; }
+        .collection-create-prompt { display: block; margin-top: 8px; color: #2563eb; font-size: 11px; font-weight: 700; text-decoration: none; }
+        .collection-library { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin-top: 16px; }
+        .collection-library-card { min-width: 0; overflow: hidden; border: 1px solid #dce5f1; border-radius: 13px; background: #fff; box-shadow: 0 5px 16px rgba(15, 23, 42, .06); }
+        .collection-cover { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; height: 150px; overflow: hidden; background: #eff6ff; }
+        .collection-cover img { width: 100%; height: 100%; min-height: 0; border-radius: 0; object-fit: cover; }
+        .collection-cover img:only-child { grid-column: 1 / -1; }
+        .collection-cover-empty { display: grid; place-items: center; grid-column: 1 / -1; color: #2563eb; font-size: 34px; font-weight: 300; }
+        .collection-library-copy { padding: 13px; }
+        .collection-library-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .collection-library-heading h3 { margin: 0; color: #172554; font-size: 16px; }
+        .collection-library-heading span { flex: 0 0 auto; padding: 3px 7px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-size: 10px; font-weight: 700; }
+        .collection-private-label { margin: 4px 0 12px; color: #64748b; font-size: 11px; }
+        .collection-saved-list { display: grid; gap: 9px; }
+        .collection-saved-item { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding-top: 9px; border-top: 1px solid #edf1f6; }
+        .collection-saved-item > a:first-child { display: block; }
+        .collection-saved-item img { width: 52px; height: 52px; border-radius: 7px; object-fit: cover; background: #f1f5f9; }
+        .collection-saved-copy { min-width: 0; }
+        .collection-saved-copy > a { display: block; overflow: hidden; color: #334155; font-size: 11px; font-weight: 700; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+        .collection-saved-copy span { display: block; margin-top: 4px; color: #64748b; font-size: 10px; }
+        .collection-remove-form { margin: 0; }
+        .collection-remove-form button { padding: 5px 7px; border: 1px solid #fecaca; border-radius: 6px; background: #fff7f7; color: #b91c1c; cursor: pointer; font: inherit; font-size: 10px; }
+        .collection-card-actions { display: flex; justify-content: flex-end; margin-top: 12px; padding-top: 10px; border-top: 1px solid #edf1f6; }
+        .collection-card-actions button { padding: 7px 10px; border: 1px solid #fecaca; border-radius: 7px; background: #fff7f7; color: #b91c1c; cursor: pointer; font: inherit; font-size: 11px; font-weight: 600; }
+        .collection-empty { margin: 0; color: #94a3b8; font-size: 12px; }
+        .collection-empty-state { margin-top: 16px; padding: 22px; border: 1px dashed #bfdbfe; border-radius: 12px; background: #f8fbff; color: #64748b; text-align: center; }
+        .collection-empty-state h3 { margin: 0 0 5px; color: #1e3a8a; }
+        .collection-empty-state p { margin: 0; font-size: 13px; }
+        .referral-link { width: 100%; }
+        .engagement-notice { padding: 10px 12px; border-radius: 8px; background: #eff6ff; color: #1e40af; }
+        .for-you-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 300px;
+            align-items: stretch;
+            gap: 18px;
+            padding: 14px;
+            background: #faf9f5;
+        }
+        .for-you-main { min-width: 0; }
+        .for-you-hero {
+            position: relative;
+            display: flex;
+            min-height: 210px;
+            align-items: center;
+            overflow: hidden;
+            padding: 24px;
+            border-radius: 12px;
+            background: #e8e5de;
+        }
+        .for-you-hero-copy { position: relative; z-index: 1; width: min(58%, 390px); }
+        .for-you-hero h2 { margin: 0 0 8px; color: #211f1b; font-size: clamp(24px, 3vw, 36px); }
+        .for-you-hero p { margin: 0 0 14px; color: #5b5a54; }
+        .for-you-hero img {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 52%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 35%;
+            mask-image: linear-gradient(to right, transparent, #000 23%);
+        }
+        .for-you-cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 9px 16px;
+            border: 0;
+            border-radius: 999px;
+            background: #3478e5;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .for-you-products-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin: 18px 0 10px;
+        }
+        .for-you-products-heading h3 { margin: 0; color: #25231f; font-size: 20px; }
+        .for-you-products-heading a { color: #2364c5; font-size: 12px; text-decoration: none; }
+        .for-you-product-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .for-you-product {
+            min-width: 0;
+            padding: 9px;
+            border: 1px solid #dedcd5;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .for-you-product > a { display: block; }
+        .for-you-product img {
+            display: block;
+            width: 100%;
+            height: 145px;
+            border-radius: 7px;
+            background: #efeee9;
+            object-fit: cover;
+        }
+        .for-you-product h4 {
+            overflow: hidden;
+            margin: 9px 0 5px;
+            color: #272521;
+            font-size: 14px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .for-you-product-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+        .for-you-product-price { color: #272521; font-size: 14px; font-weight: 700; white-space: nowrap; }
+        .for-you-add {
+            padding: 6px 9px;
+            border: 1px solid #d9d7d0;
+            border-radius: 999px;
+            background: #faf9f5;
+            color: #34332e;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .for-you-add:disabled { opacity: .55; cursor: not-allowed; }
+        .for-you-recommendations {
+            min-width: 0;
+            padding: 16px;
+            border: 1px solid #e0ded7;
+            border-radius: 11px;
+            background: #f1f0eb;
+        }
+        .for-you-recommendations h3 { margin: 0; color: #24221e; font-size: 21px; line-height: 1.25; }
+        .for-you-recommendations > p { margin: 7px 0 12px; color: #77756e; font-size: 12px; }
+        .recommendation-list { display: grid; gap: 8px; }
+        .recommendation-card {
+            display: grid;
+            grid-template-columns: 66px minmax(0, 1fr);
+            align-items: center;
+            gap: 9px;
+            min-width: 0;
+            padding: 7px;
+            border: 1px solid #dedcd5;
+            border-radius: 9px;
+            background: #fff;
+        }
+        .recommendation-card[hidden] { display: none; }
+        .recommendation-card > a:first-child { display: block; }
+        .recommendation-card img { display: block; width: 66px; height: 66px; border-radius: 6px; background: #efeee9; object-fit: cover; }
+        .recommendation-copy { min-width: 0; }
+        .recommendation-copy > a { display: block; overflow: hidden; color: #282621; font-size: 12px; font-weight: 700; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+        .recommendation-copy span { display: block; overflow: hidden; margin-top: 3px; color: #77756e; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+        .recommendation-price-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 7px; }
+        .recommendation-price-row strong { color: #272521; font-size: 12px; white-space: nowrap; }
+        .recommendation-price-row a { color: #2464b1; font-size: 11px; text-decoration: none; }
+        .recommendations-all {
+            width: 100%;
+            margin-top: 11px;
+            border: 0;
+            cursor: pointer;
+        }
+        .for-you-empty { padding: 16px; border-radius: 8px; background: #fff; color: #64748b; }
+        .recently-viewed-panel { padding: 22px; background: #fff; }
+        .recently-viewed-panel h2 { margin: 0 0 14px; color: #24221e; font-size: 21px; }
+        .recently-viewed-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .recently-viewed-card {
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid #ecebe7;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 5px 13px rgba(31, 41, 55, .07);
+            color: inherit;
+            text-decoration: none;
+            transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+        .recently-viewed-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 9px 18px rgba(31, 41, 55, .12);
+        }
+        .recently-viewed-card img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1.15;
+            background: #f1f1ef;
+            object-fit: cover;
+        }
+        .recently-viewed-card-copy { padding: 10px 11px 12px; }
+        .recently-viewed-card h3 {
+            overflow: hidden;
+            margin: 0 0 4px;
+            color: #25231f;
+            font-size: 13px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .recently-viewed-card p { margin: 0; color: #77756e; font-size: 11px; }
+        .recently-viewed-card .recently-viewed-price { margin-top: 5px; color: #292721; font-size: 12px; font-weight: 700; }
+        .new-arrivals-panel { padding: 22px; background: #fff; }
+        .new-arrivals-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .new-arrivals-heading h2 { margin: 0; color: #202124; font-size: 22px; }
+        .new-arrivals-heading p { margin: 5px 0 0; color: #737782; font-size: 12px; }
+        .new-arrivals-heading > a { flex: 0 0 auto; color: #1d5fc4; font-size: 12px; font-weight: 700; text-decoration: none; }
+        .new-arrivals-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 14px 12px;
+        }
+        .new-arrival-card { min-width: 0; color: inherit; }
+        .new-arrival-image-link {
+            position: relative;
+            display: block;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #f4f5f6;
+        }
+        .new-arrival-card img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            transition: transform 180ms ease;
+        }
+        .new-arrival-image-link:hover img { transform: scale(1.035); }
+        .new-arrival-badge {
+            position: absolute;
+            top: 9px;
+            left: 9px;
+            padding: 4px 7px;
+            border-radius: 4px;
+            background: #2563eb;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .new-arrival-badge.is-sold-out { background: #73777f; }
+        .new-arrival-meta { display: flex; justify-content: space-between; gap: 8px; margin: 9px 0 5px; color: #777b83; font-size: 10px; }
+        .new-arrival-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .new-arrival-card h3 {
+            display: -webkit-box;
+            overflow: hidden;
+            min-height: 36px;
+            margin: 0 0 4px;
+            color: #25272b;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.5;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+        .new-arrival-card h3 a { color: inherit; text-decoration: none; }
+        .new-arrival-description {
+            display: -webkit-box;
+            overflow: hidden;
+            min-height: 30px;
+            margin: 0 0 6px;
+            color: #737782;
+            font-size: 10px;
+            line-height: 1.5;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+        .new-arrival-price { margin: 0 0 8px; color: #202124; font-size: 13px; font-weight: 700; }
+        .new-arrival-add {
+            width: 100%;
+            min-height: 31px;
+            padding: 6px 8px;
+            border: 1px solid #d5deed;
+            border-radius: 6px;
+            background: #f7faff;
+            color: #2059ac;
+            cursor: pointer;
+            font: inherit;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        .new-arrival-add:disabled { color: #707782; background: #f2f3f5; cursor: not-allowed; }
+        .new-arrival-empty { padding: 18px; border-radius: 9px; background: #f5f7fa; color: #64748b; font-size: 13px; }
+        @media (max-width: 900px) {
+            .new-arrivals-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+        @media (max-width: 650px) {
+            .new-arrivals-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 9px; }
+        }
+        @media (max-width: 520px) {
+            .new-arrivals-panel { padding: 16px; }
+            .new-arrivals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .new-arrivals-heading { align-items: flex-start; }
+        }
+        .rewards-panel { overflow: hidden; background: #f5f8ff; }
+        .rewards-panel > h2 { margin: 0 0 6px; color: #1e293b; }
+        .rewards-intro { margin: 0 0 16px; color: #687087; font-size: 13px; }
+        .reward-balance-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding: 16px 18px;
+            border-radius: 12px;
+            background: linear-gradient(110deg, #2563eb, #0ea5e9);
+            color: #fff;
+        }
+        .reward-balance-bar span { display: block; opacity: .9; font-size: 12px; }
+        .reward-balance-bar strong { display: block; margin-top: 4px; font-size: 25px; }
+        .reward-tier-progress { min-width: min(100%, 260px); flex: 1; }
+        .reward-tier-progress progress { display: block; width: 100%; height: 9px; margin-top: 8px; accent-color: #111827; }
+        .reward-missions-title,
+        .reward-benefits-title { margin: 18px 0 10px; color: #1e293b; font-size: 17px; }
+        .mission-grid,
+        .reward-benefit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .mission-card,
+        .reward-benefit {
+            padding: 13px;
+            border: 1px solid #e4e6ed;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .mission-card.is-complete { border-color: #42bb77; background: #f1fff6; }
+        .mission-card h3 { margin: 0 0 6px; color: #1e293b; font-size: 14px; }
+        .mission-card p { margin: 6px 0; color: #647087; font-size: 12px; line-height: 1.4; }
+        .mission-card progress { display: block; width: 100%; height: 8px; margin: 9px 0; accent-color: #2563eb; }
+        .mission-card.is-complete progress { accent-color: #16a34a; }
+        .mission-state { display: flex; justify-content: space-between; gap: 8px; color: #526073; font-size: 11px; }
+        .mission-state strong { color: #2563eb; }
+        .mission-card.is-complete .mission-state strong { color: #15803d; }
+        .reward-benefit strong { display: block; color: #1e293b; font-size: 14px; }
+        .reward-benefit p { margin: 5px 0 0; color: #697389; font-size: 12px; }
+        .reward-benefit.is-eligible { border-color: #93c5fd; background: #f1f7ff; }
+        .reward-benefit.is-eligible strong { color: #1d4ed8; }
+        .reward-benefit-note { margin: 10px 0 0; color: #647087; font-size: 12px; }
+        .reward-tier-benefits { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+        .reward-tier-benefit { padding: 10px; border: 1px solid #e4e6ed; border-radius: 8px; background: #fff; }
+        .reward-tier-benefit strong { display: block; color: #1e293b; font-size: 12px; }
+        .reward-tier-benefit span { display: block; margin-top: 4px; color: #747b8e; font-size: 11px; }
+        .reward-history { margin-top: 14px; padding: 12px; border: 1px solid #e4e6ed; border-radius: 9px; background: #fff; }
+        .reward-history summary { color: #334155; cursor: pointer; font-weight: 700; }
+        .reward-history ul { display: grid; gap: 7px; margin-bottom: 0; padding-left: 18px; color: #647087; font-size: 12px; }
+        .reward-points-earned { color: #15803d; font-weight: 700; }
+        .reward-points-spent { color: #b45309; font-weight: 700; }
+        @media (max-width: 520px) {
+            .reward-tier-benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @keyframes product-pop {
+            from { opacity: 0; transform: translateY(18px) scale(.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+        }
+        .dashboard-form { display: grid; gap: 12px; }
+        .dashboard-form label { display: block; font-weight: 600; }
+        .dashboard-form input,
+        .dashboard-form select,
+        .dashboard-form textarea {
+            display: block;
+            width: 100%;
+            margin-top: 5px;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: inherit;
+        }
+        .dashboard-form textarea { min-height: 76px; resize: vertical; }
+        .profile-grid,
+        .saved-grid,
+        .communication-grid,
+        .review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+        }
+        .saved-card,
+        .communication-card,
+        .review-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px;
+            background: #fff;
+        }
+        .saved-card img {
+            width: 100%;
+            height: 150px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #e2e8f0;
+        }
+        .message-list { display: grid; gap: 8px; margin: 12px 0; }
+        .message-bubble {
+            padding: 10px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            overflow-wrap: anywhere;
+        }
+        .message-bubble.customer-message { background: #dbeafe; }
+        .tracking {
+            display: flex;
+            gap: 0;
+            margin: 16px 0;
+            padding: 0;
+            list-style: none;
+        }
+        .tracking li {
+            position: relative;
+            flex: 1;
+            padding: 18px 5px 0;
+            border-top: 3px solid #cbd5e1;
+            color: #64748b;
+            font-size: 12px;
+            text-align: center;
+            text-transform: capitalize;
+        }
+        .tracking li::before {
+            position: absolute;
+            top: -7px;
+            left: calc(50% - 6px);
+            width: 10px;
+            height: 10px;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+            background: white;
+            content: "";
+        }
+        .tracking li.completed {
+            border-color: #2563eb;
+            color: #1d4ed8;
+            font-weight: 700;
+        }
+        .tracking li.completed::before { border-color: #2563eb; background: #2563eb; }
+        .tracking-cancelled { color: #991b1b; font-weight: 700; }
+        .rating { color: #b45309; letter-spacing: 2px; }
+        @media (max-width: 520px) {
+            .panel { padding: 14px; }
+            .tracking li { font-size: 10px; }
+        }
+        @media (max-width: 860px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+            .dashboard-sidebar {
+                position: static;
+                max-height: none;
+            }
+            .section-nav {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 4px;
+            }
+            .section-nav a { flex: 0 0 auto; }
+            .for-you-layout { grid-template-columns: minmax(0, 1fr) 270px; }
+        }
+        @media (max-width: 700px) {
+            .for-you-layout { grid-template-columns: 1fr; }
+            .for-you-recommendations { order: 2; }
+        }
+        @media (max-width: 520px) {
+            .for-you-hero { min-height: 190px; padding: 18px; }
+            .for-you-hero-copy { width: 70%; }
+            .for-you-hero img { width: 58%; opacity: .82; }
+            .for-you-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .for-you-product img { height: 125px; }
+            .for-you-products-heading { align-items: flex-start; flex-direction: column; }
+            .recently-viewed-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .recently-viewed-panel { padding: 16px; }
+        }
+        @media (min-width: 521px) and (max-width: 860px) {
+            .recently-viewed-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a class="brand-link" href="/" aria-label="The Marketplace home">
+            <img class="brand-logo" src="/images/multivendor-logo.png" alt="Multi Vendor Marketplace logo">
+        </a>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/cart" class="cart-link" aria-label="Shopping cart, <%= cartCount %> items" title="Shopping cart">
+                <svg class="cart-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 8H6"></path>
+                    <circle cx="10" cy="20" r="1"></circle>
+                    <circle cx="18" cy="20" r="1"></circle>
+                </svg>
+                <% if (cartCount > 0) { %>
+                    <span class="cart-badge"><%= cartCount %></span>
+                <% } %>
+            </a>
+            <span>Hi, <%= user.name %></span>
+            <form action="/auth/logout" method="POST" style="display:inline; margin-left:16px;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit">Logout</button>
+            </form>
+        </nav>
+    </header>
+
+    <main>
+        <div class="dashboard-layout">
+            <aside class="dashboard-sidebar">
+                <h2>Dashboard sections</h2>
+                <svg aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute;overflow:hidden">
+                    <symbol id="section-icon-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/></symbol>
+                    <symbol id="section-icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+                    <symbol id="section-icon-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v2a4 4 0 0 0 4 4m9-6h3v2a4 4 0 0 1-4 4"/></symbol>
+                    <symbol id="section-icon-package" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v9l9 5 9-5V8M12 13v9M7.5 5.5l9 5"/></symbol>
+                    <symbol id="section-icon-store" viewBox="0 0 24 24"><path d="M3 10v10h18V10M2 10l2-7h16l2 7a3 3 0 0 1-5 2 3 3 0 0 1-5 0 3 3 0 0 1-5 0 3 3 0 0 1-5-2ZM9 20v-6h6v6"/></symbol>
+                    <symbol id="section-icon-collection" viewBox="0 0 24 24"><rect x="4" y="4" width="13" height="16" rx="2"/><path d="M8 2h11a2 2 0 0 1 2 2v14M8 9h5m-5 4h5"/></symbol>
+                    <symbol id="section-icon-gift" viewBox="0 0 24 24"><path d="M3 10h18v11H3zM2 6h20v4H2zM12 6v15"/><path d="M12 6H8.5a2.5 2.5 0 1 1 2.5-2.5V6Zm0 0h3.5a2.5 2.5 0 1 0-2.5-2.5V6Z"/></symbol>
+                    <symbol id="section-icon-shopping-bag" viewBox="0 0 24 24"><path d="M4 8h16l-1 13H5L4 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></symbol>
+                    <symbol id="section-icon-truck" viewBox="0 0 24 24"><path d="M3 6h12v12H3zM15 10h4l3 3v5h-7"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="18.5" cy="18.5" r="1.5"/></symbol>
+                    <symbol id="section-icon-wallet" viewBox="0 0 24 24"><path d="M4 6h15a2 2 0 0 1 2 2v12H4a2 2 0 0 1-2-2V6a3 3 0 0 1 3-3h13v3"/><path d="M21 11h-5a2 2 0 0 0 0 4h5"/><path d="M16 13h.01"/></symbol>
+                    <symbol id="section-icon-heart" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 11-8.8 11s-8.8-5.8-8.8-11a4.8 4.8 0 0 1 8.8-2.6 4.8 4.8 0 0 1 8.8 2.6Z"/></symbol>
+                    <symbol id="section-icon-message" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 4a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.4Z"/></symbol>
+                    <symbol id="section-icon-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></symbol>
+                    <symbol id="section-icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+                </svg>
+                <nav class="section-nav" aria-label="Customer dashboard sections">
+                    <a href="#for-you"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-sparkles"></use></svg><span>For you</span></a>
+                    <a href="#recently-viewed"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-clock"></use></svg><span>Recently viewed</span></a>
+                    <a href="#rewards"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-trophy"></use></svg><span>Rewards &amp; missions</span></a>
+                    <a href="#new-arrivals"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-package"></use></svg><span>New arrivals</span></a>
+                    <a href="#seller-follows"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-store"></use></svg><span>Follow sellers</span></a>
+                    <a href="#collections"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-collection"></use></svg><span>Collections</span></a>
+                    <a href="#referrals"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-gift"></use></svg><span>Referrals</span></a>
+                    <a href="#marketplace-picks"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-shopping-bag"></use></svg><span>Shop products</span></a>
+                    <a href="#order-history"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-truck"></use></svg><span>Orders</span></a>
+                    <a href="#wallet"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-wallet"></use></svg><span>Wallet &amp; payments</span></a>
+                    <a href="#saved-items"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-heart"></use></svg><span>Saved items</span></a>
+                    <a href="#communication-hub"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-message"></use></svg><span>Seller messages</span></a>
+                    <a href="#reviews-panel"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-star"></use></svg><span>Reviews</span></a>
+                    <a href="#shipping-profile"><svg class="section-nav-icon" aria-hidden="true"><use href="#section-icon-user"></use></svg><span>Shipping &amp; profile</span></a>
+                </nav>
+            </aside>
+            <div class="dashboard-content">
+        <h1><%= user && user.role === 'buyer' ? 'Buyer Dashboard' : 'Customer Dashboard' %></h1>
+        <% if (orderCancelled) { %>
+            <p class="notice" role="status">Your order was cancelled and the items were returned to stock.</p>
+        <% } %>
+        <% if (paymentNotice === "pending") { %><p class="notice" role="status">An M-Pesa payment request is already in progress. Do not start another checkout; wait for its result and check your payment history again.</p><% } %>
+        <% if (paymentNotice === "retry") { %><p class="notice" role="status">You already have an unpaid M-Pesa order. Retry its confirmed failed payment below, or cancel the order before starting another checkout.</p><% } %>
+        <% if (paymentNotice === "failed") { %><p class="notice" role="status">The M-Pesa request was declined. You can retry a confirmed failed payment from your payment history below.</p><% } %>
+        <% if (paymentNotice === "prompt") { %><p class="notice" role="status">M-Pesa prompt sent. Authorize it on your phone; the order stays pending until payment is confirmed.</p><% } %>
+        <% if (savedItemMovedToCart) { %><p class="notice" role="status">The saved item was moved to your cart.</p><% } %>
+        <% if (profileUpdated) { %><p class="notice" role="status">Your shipping and contact details were saved.</p><% } %>
+        <% if (messageSent) { %><p class="notice" role="status">Your message was sent.</p><% } %>
+        <% if (reviewSubmitted) { %><p class="notice" role="status"><%= reviewAction === "updated" ? "Your review was updated." : "Your review was submitted. Thank you!" %></p><% } %>
+        <% if (quizUpdated) { %><p class="notice" role="status">Your product picks were updated.</p><% } %>
+        <% if (followUpdated) { %><p class="notice" role="status">Your seller follows were updated.</p><% } %>
+        <% if (collectionUpdated) { %>
+            <p class="notice" role="status"><%= ({created: "Your collection was created.", added: "Product saved to your collection.", removed: "Product removed from your collection.", deleted: "Your collection was deleted."})[collectionAction] || "Your collections were updated." %></p>
+        <% } %>
+        <% if (alertsUpdated) { %><p class="notice" role="status">Your wishlist alert settings were saved.</p><% } %>
+        <section class="panel for-you-layout" id="for-you" aria-label="Personalized shopping recommendations">
+            <div class="for-you-main">
+                <section class="for-you-hero" aria-labelledby="for-you-hero-title">
+                    <% if (featuredProducts && featuredProducts.length) { %>
+                        <img src="<%= productImage(featuredProducts[0]) %>" alt="" fetchpriority="high">
+                    <% } %>
+                    <div class="for-you-hero-copy">
+                        <h2 id="for-you-hero-title">New arrivals</h2>
+                        <p>Discover fresh finds from marketplace sellers.</p>
+                        <a class="for-you-cta" href="#new-arrivals">Explore now</a>
+                    </div>
+                </section>
+                <section id="marketplace-picks" aria-labelledby="marketplace-picks-title">
+                    <div class="for-you-products-heading">
+                        <h3 id="marketplace-picks-title">Featured products</h3>
+                        <a href="/">Shop the marketplace</a>
+                    </div>
+                    <% if (featuredProducts && featuredProducts.length) { %>
+                        <div class="for-you-product-grid">
+                            <% featuredProducts.slice(0, 6).forEach(function(product) { %>
+                                <article class="for-you-product">
+                                    <a href="/products/<%= product.id %>" aria-label="View <%= product.name %>">
+                                        <img src="<%= productImage(product) %>" alt="<%= product.name %>" loading="lazy">
+                                    </a>
+                                    <h4 title="<%= product.name %>"><%= product.name %></h4>
+                                    <div class="for-you-product-meta">
+                                        <span class="for-you-product-price">KSh <%= Number(product.price).toLocaleString("en-KE") %></span>
+                                        <form action="/cart/add" method="POST" data-add-to-cart>
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <input type="hidden" name="productId" value="<%= product.id %>">
+                                            <input type="hidden" name="quantity" value="1">
+                                            <button class="for-you-add" type="submit" <%= product.stock <= 0 ? "disabled" : "" %>><%= product.stock <= 0 ? "Sold out" : "Add to cart" %></button>
+                                        </form>
+                                    </div>
+                                    <% if (engagementDashboard.collections.length) { %>
+                                        <form class="collection-add-form" action="/customer/collections/items" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <input type="hidden" name="productId" value="<%= product.id %>">
+                                            <select name="collectionId" aria-label="Choose a collection for <%= product.name %>" required>
+                                                <option value="">Save to collection</option>
+                                                <% engagementDashboard.collections.forEach(function(collection) { %>
+                                                    <option value="<%= collection.id %>"><%= collection.name %></option>
+                                                <% }); %>
+                                            </select>
+                                            <button type="submit">Save</button>
+                                        </form>
+                                    <% } else { %>
+                                        <a class="collection-create-prompt" href="#collections">Create a collection to save</a>
+                                    <% } %>
+                                </article>
+                            <% }); %>
+                        </div>
+                    <% } else { %>
+                        <p class="for-you-empty">There are no approved products to browse right now. Please check back soon.</p>
+                    <% } %>
+                </section>
+            </div>
+            <aside class="for-you-recommendations" aria-labelledby="recommendations-title">
+                <h3 id="recommendations-title">Personalized recommendations</h3>
+                <p>Based on your browsing.</p>
+                <% if (engagementDashboard.recommendations.length) { %>
+                    <div class="recommendation-list">
+                        <% engagementDashboard.recommendations.forEach(function(product, index) { %>
+                            <article class="recommendation-card" <%= index >= 4 ? "hidden" : "" %>>
+                                <a href="/products/<%= product.id %>" aria-label="View <%= product.name %>">
+                                    <img src="<%= productImage(product) %>" alt="<%= product.name %>" loading="lazy">
+                                </a>
+                                <div class="recommendation-copy">
+                                    <a href="/products/<%= product.id %>"><%= product.name %></a>
+                                    <span><%= product.business_name || "Fits your style" %></span>
+                                    <div class="recommendation-price-row">
+                                        <strong>KSh <%= Number(product.price).toLocaleString("en-KE") %></strong>
+                                        <a href="/products/<%= product.id %>">View</a>
+                                    </div>
+                                </div>
+                            </article>
+                        <% }); %>
+                    </div>
+                    <% if (engagementDashboard.recommendations.length > 4) { %>
+                        <button class="for-you-cta recommendations-all" type="button" data-show-recommendations>View all recommendations</button>
+                    <% } %>
+                <% } else { %>
+                    <p class="for-you-empty">Browse products or choose your shopping preferences to get personalized picks.</p>
+                <% } %>
+            </aside>
+        </section>
+        <div class="featured-toast" id="marketplace-toast" role="status" aria-live="polite"></div>
+
+        <section class="panel engagement-section" id="shopping-preferences">
+            <h2>Personalize your picks</h2>
+            <p class="muted">Recommendations use your quiz choice, saved items, product views, purchases, and followed sellers.</p>
+            <form class="dashboard-form engagement-card" action="/customer/preferences" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <h3>Find your vibe</h3>
+                <label>Favorite category
+                    <select name="favoriteCategoryId">
+                        <option value="">Surprise me</option>
+                        <% engagementDashboard.categories.forEach(function(category) { %>
+                            <option value="<%= category.id %>" <%= engagementDashboard.preferences.favorite_category_id == category.id ? "selected" : "" %>><%= category.name %></option>
+                        <% }); %>
+                    </select>
+                </label>
+                <label>What matters most?
+                    <select name="shoppingStyle">
+                        <option value="">Choose a style</option>
+                        <option value="value" <%= engagementDashboard.preferences.shopping_style === "value" ? "selected" : "" %>>Great value</option>
+                        <option value="quality" <%= engagementDashboard.preferences.shopping_style === "quality" ? "selected" : "" %>>Quality finds</option>
+                        <option value="trending" <%= engagementDashboard.preferences.shopping_style === "trending" ? "selected" : "" %>>Trending now</option>
+                        <option value="local" <%= engagementDashboard.preferences.shopping_style === "local" ? "selected" : "" %>>Support local sellers</option>
+                    </select>
+                </label>
+                <button type="submit">Update my picks</button>
+            </form>
+        </section>
+
+        <section class="panel engagement-section recently-viewed-panel" id="recently-viewed">
+            <h2>Recently viewed</h2>
+            <% if (engagementDashboard.recentlyViewed.length) { %>
+                <div class="recently-viewed-grid">
+                    <% engagementDashboard.recentlyViewed.forEach(function(product) { %>
+                        <a class="recently-viewed-card" href="/products/<%= product.id %>">
+                            <img src="<%= productImage(product) %>" alt="<%= product.name %>" loading="lazy">
+                            <div class="recently-viewed-card-copy">
+                                <h3 title="<%= product.name %>"><%= product.name %></h3>
+                                <p><%= product.category_name || "Other" %></p>
+                                <p class="recently-viewed-price">KSh <%= Number(product.price).toLocaleString("en-KE") %></p>
+                            </div>
+                        </a>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p class="muted">Products you view will appear here so you can pick up where you left off.</p>
+            <% } %>
+        </section>
+
+        <section class="panel engagement-section rewards-panel" id="rewards">
+            <h2>Rewards wallet &amp; shopping missions</h2>
+            <p class="rewards-intro">Earn points from completed missions and delivered purchases. Redeem them for checkout savings.</p>
+            <div class="reward-balance-bar">
+                <div>
+                    <span>Available shopping points</span>
+                    <strong><%= Math.max(0, engagementDashboard.loyalty.totalPoints).toLocaleString("en-KE") %></strong>
+                </div>
+                <div>
+                    <span>Current member tier</span>
+                    <strong><%= engagementDashboard.loyalty.tier %></strong>
+                </div>
+                <div class="reward-tier-progress">
+                    <% if (engagementDashboard.loyalty.nextTier) { %>
+                        <span><%= engagementDashboard.loyalty.pointsToNextTier %> points to <%= engagementDashboard.loyalty.nextTier.name %></span>
+                        <progress max="<%= engagementDashboard.loyalty.nextTier.points %>" value="<%= engagementDashboard.loyalty.totalPoints %>"><%= engagementDashboard.loyalty.totalPoints %></progress>
+                    <% } else { %>
+                        <span>You’ve reached the highest tier</span>
+                        <progress max="<%= engagementDashboard.loyalty.totalPoints || 1 %>" value="<%= engagementDashboard.loyalty.totalPoints %>"><%= engagementDashboard.loyalty.totalPoints %></progress>
+                    <% } %>
+                </div>
+            </div>
+            <h3 class="reward-missions-title">Mission cards</h3>
+            <div class="mission-grid">
+                <% engagementDashboard.loyalty.missions.forEach(function(mission) { %>
+                    <article class="mission-card <%= mission.completed ? "is-complete" : "" %>">
+                        <h3><%= mission.title %></h3>
+                        <p><%= mission.key === "browse-3-products" ? "View products to discover new finds." : mission.key === "save-3-items" ? "Save products you want to revisit." : "Share your thoughts on a purchase." %></p>
+                        <div class="mission-state">
+                            <span>Progress</span>
+                            <span><%= mission.progress %>/<%= mission.target %></span>
+                        </div>
+                        <progress max="<%= mission.target %>" value="<%= mission.progress %>"><%= mission.progress %></progress>
+                        <div class="mission-state">
+                            <strong>⚡ <%= mission.points %> points</strong>
+                            <strong><%= mission.completed ? "✓ Completed" : "In progress" %></strong>
+                        </div>
+                    </article>
+                <% }); %>
+            </div>
+            <h3 class="reward-benefits-title">Available rewards</h3>
+            <div class="reward-benefit-grid">
+                <% [
+                    {points: 100, discount: 50},
+                    {points: 500, discount: 250},
+                    {points: 1000, discount: 500}
+                ].forEach(function(reward) { %>
+                    <article class="reward-benefit <%= engagementDashboard.loyalty.totalPoints >= reward.points ? "is-eligible" : "" %>">
+                        <strong>KSh <%= reward.discount.toLocaleString("en-KE") %> checkout discount</strong>
+                        <p><%= reward.points.toLocaleString("en-KE") %> points · <%= engagementDashboard.loyalty.totalPoints >= reward.points ? "Available to redeem" : `${(reward.points - engagementDashboard.loyalty.totalPoints).toLocaleString("en-KE")} more points needed` %></p>
+                    </article>
+                <% }); %>
+            </div>
+            <p class="reward-benefit-note">Every 100 points saves KSh 50. You can apply points at checkout up to 20% of your cart subtotal. Points are earned at 1 point per KSh 100 on delivered, paid orders. Cancelled or unsuccessful orders do not earn points.</p>
+            <h3 class="reward-benefits-title">Member levels</h3>
+            <div class="reward-tier-benefits">
+                <% [
+                    {name: "Bronze", points: 0},
+                    {name: "Silver", points: 250},
+                    {name: "Gold", points: 750},
+                    {name: "Platinum", points: 1500}
+                ].forEach(function(tier) { %>
+                    <div class="reward-tier-benefit">
+                        <strong><%= tier.name %><%= engagementDashboard.loyalty.tier === tier.name ? " · Current" : "" %></strong>
+                        <span><%= tier.points.toLocaleString("en-KE") %> points</span>
+                    </div>
+                <% }); %>
+            </div>
+            <h3>Your badges</h3>
+            <% if (engagementDashboard.loyalty.badges.length) { %>
+                <ul class="badge-list">
+                    <% engagementDashboard.loyalty.badges.forEach(function(badge) { %>
+                        <li title="Earned <%= new Date(badge.earned_at).toLocaleDateString('en-KE') %>"><%= ({ "first-purchase": "First Purchase", "local-supporter": "Local Supporter", "top-reviewer": "Top Reviewer", trendsetter: "Trendsetter" })[badge.badge_key] || badge.badge_key %></li>
+                    <% }); %>
+                </ul>
+            <% } else { %>
+                <p class="muted">Your first purchase, seller follows, reviews, and collections unlock badges.</p>
+            <% } %>
+            <% if (engagementDashboard.pointsHistory.length) { %>
+                <details class="reward-history">
+                    <summary>Recent points activity</summary>
+                    <ul><% engagementDashboard.pointsHistory.forEach(function(entry) { %>
+                        <li><%= entry.reason %>: <strong class="<%= entry.points < 0 ? "reward-points-spent" : "reward-points-earned" %>"><%= entry.points > 0 ? "+" : "" %><%= Number(entry.points).toLocaleString("en-KE") %> points</strong></li>
+                    <% }); %></ul>
+                </details>
+            <% } %>
+        </section>
+
+        <section class="panel engagement-section new-arrivals-panel" id="new-arrivals" aria-labelledby="new-arrivals-title">
+            <div class="new-arrivals-heading">
+                <div>
+                    <h2 id="new-arrivals-title">New Arrivals</h2>
+                    <p>Discover the latest approved products and collections from marketplace sellers.</p>
+                </div>
+                <a href="/#product-grid">Shop new ↗</a>
+            </div>
+            <% if (featuredProducts && featuredProducts.length) { %>
+                <div class="new-arrivals-grid">
+                    <% featuredProducts.forEach(function(product) { %>
+                        <article class="new-arrival-card">
+                            <a class="new-arrival-image-link" href="/products/<%= product.id %>" aria-label="View <%= product.name %>">
+                                <img src="<%= productImage(product) %>" alt="<%= product.name %>" loading="lazy">
+                                <span class="new-arrival-badge <%= product.stock <= 0 ? "is-sold-out" : "" %>"><%= product.stock <= 0 ? "Sold out" : "New" %></span>
+                            </a>
+                            <div class="new-arrival-meta">
+                                <span><%= product.category_name || "Marketplace" %></span>
+                                <% if (product.business_name) { %><span><%= product.business_name %></span><% } %>
+                            </div>
+                            <h3><a href="/products/<%= product.id %>"><%= product.name %></a></h3>
+                            <p class="new-arrival-description"><%= product.description || "Discover this new find from a marketplace seller." %></p>
+                            <p class="new-arrival-price">KSh <%= Number(product.price).toLocaleString("en-KE") %></p>
+                            <% if (!user || user.role !== "seller") { %>
+                                <form action="/cart/add" method="POST" data-add-to-cart>
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <input type="hidden" name="productId" value="<%= product.id %>">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button class="new-arrival-add" type="submit" <%= product.stock <= 0 ? "disabled" : "" %>><%= product.stock <= 0 ? "Sold out" : "Add to cart" %></button>
+                                </form>
+                            <% } else { %>
+                                <a class="new-arrival-add" href="/products/<%= product.id %>" style="display:block;text-align:center;text-decoration:none;">View product</a>
+                            <% } %>
+                            <% if (engagementDashboard.collections.length) { %>
+                                <form class="collection-add-form" action="/customer/collections/items" method="POST">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <input type="hidden" name="productId" value="<%= product.id %>">
+                                    <select name="collectionId" aria-label="Choose a collection for <%= product.name %>" required>
+                                        <option value="">Save to collection</option>
+                                        <% engagementDashboard.collections.forEach(function(collection) { %>
+                                            <option value="<%= collection.id %>"><%= collection.name %></option>
+                                        <% }); %>
+                                    </select>
+                                    <button type="submit">Save</button>
+                                </form>
+                            <% } else { %>
+                                <a class="collection-create-prompt" href="#collections">Create a collection to save</a>
+                            <% } %>
+                        </article>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p class="new-arrival-empty">There are no approved products to show right now. Check back soon for new listings.</p>
+            <% } %>
+        </section>
+
+        <section class="panel engagement-section" id="seller-follows">
+            <h2>Followed shops &amp; seller updates</h2>
+            <p class="muted">Follow a vendor to keep their latest approved products and price-drop promotions close. New listings and price drops appear here, and email updates are sent when email is configured.</p>
+            <% if (engagementDashboard.sellerUpdates.length) { %>
+                <h3 class="seller-update-heading">Latest updates from your shops</h3>
+                <ul class="seller-update-list">
+                    <% engagementDashboard.sellerUpdates.forEach(function(update) { %>
+                        <li class="seller-update-item">
+                            <a href="/products/<%= update.product_id %>"><%= update.product_name %></a>
+                            <span> · <%= update.update_type === "price_drop" ? "Price drop" : "New product" %> from <%= update.seller_name %></span>
+                            <p><%= update.message %> · <%= new Date(update.created_at).toLocaleString("en-KE") %><%= update.emailed_at ? " · Emailed" : Number(customerProfile.email_notifications ?? 1) === 1 ? " · Email update pending" : " · Email notifications disabled" %></p>
+                        </li>
+                    <% }); %>
+                </ul>
+            <% } %>
+            <div class="engagement-grid">
+                <% if (engagementDashboard.followedSellers.length) { %>
+                    <% engagementDashboard.followedSellers.forEach(function(seller) { %>
+                        <article class="engagement-card">
+                            <h3><%= seller.seller_name %></h3>
+                            <p><%= seller.business_description || "A local marketplace seller." %></p>
+                            <p><strong><%= seller.new_products %></strong> new listing(s) in the last 30 days</p>
+                            <form action="/customer/sellers/<%= seller.seller_id %>/unfollow" method="POST">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button type="submit">Unfollow</button>
+                            </form>
+                        </article>
+                    <% }); %>
+                <% } else { %><p class="muted">You are not following any sellers yet.</p><% } %>
+                <% engagementDashboard.sellerSuggestions.forEach(function(seller) { %>
+                    <article class="engagement-card">
+                        <h3><%= seller.seller_name %></h3>
+                        <form action="/customer/sellers/<%= seller.seller_id %>/follow" method="POST">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <button type="submit">Follow seller</button>
+                        </form>
+                    </article>
+                <% }); %>
+            </div>
+            <% if (engagementDashboard.followedProducts.length) { %>
+                <div class="followed-shop-products">
+                    <h3>New products from shops you follow</h3>
+                    <div class="followed-product-list">
+                        <% engagementDashboard.followedProducts.forEach(function(product) { %>
+                            <article class="followed-product-card">
+                                <a href="/products/<%= product.id %>" aria-label="View <%= product.name %>">
+                                    <img src="<%= productImage(product) %>" alt="<%= product.name %>" loading="lazy">
+                                </a>
+                                <div class="followed-product-copy">
+                                    <a href="/products/<%= product.id %>"><%= product.name %></a>
+                                    <p><%= product.business_name %> · Added <%= new Date(product.created_at).toLocaleDateString("en-KE") %></p>
+                                    <strong>KSh <%= Number(product.price).toLocaleString("en-KE") %></strong>
+                                </div>
+                            </article>
+                        <% }); %>
+                    </div>
+                </div>
+            <% } else if (engagementDashboard.followedSellers.length) { %>
+                <p class="muted">No new products from your followed shops yet. We’ll show listings here when they’re approved.</p>
+            <% } %>
+        </section>
+
+        <section class="panel engagement-section" id="collections">
+            <h2>My collections</h2>
+            <p class="muted">Create private collections, save products while browsing, and revisit or organize your picks any time.</p>
+            <form class="dashboard-form engagement-card" action="/customer/collections" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <label>Create a collection
+                    <input type="text" name="name" maxlength="60" placeholder="Gift ideas, Room makeover..." required>
+                </label>
+                <button type="submit">Create collection</button>
+            </form>
+            <% if (engagementDashboard.collections.length) { %>
+                <div class="collection-library" aria-label="Saved collections">
+                    <% engagementDashboard.collections.forEach(function(collection) { %>
+                        <article class="collection-library-card">
+                            <div class="collection-cover" aria-hidden="true">
+                                <% if (collection.products.length) { %>
+                                    <% collection.products.slice(0, 4).forEach(function(product) { %>
+                                        <img src="<%= productImage(product) %>" alt="" loading="lazy">
+                                    <% }); %>
+                                <% } else { %>
+                                    <span class="collection-cover-empty">+</span>
+                                <% } %>
+                            </div>
+                            <div class="collection-library-copy">
+                                <div class="collection-library-heading">
+                                    <h3><%= collection.name %></h3>
+                                    <span><%= collection.products.length %> saved</span>
+                                </div>
+                                <p class="collection-private-label">Private collection · Only you can see this</p>
+                                <% if (collection.products.length) { %>
+                                    <div class="collection-saved-list">
+                                        <% collection.products.forEach(function(product) { %>
+                                            <article class="collection-saved-item">
+                                                <a href="/products/<%= product.id %>" aria-label="View <%= product.name %>">
+                                                    <img src="<%= productImage(product) %>" alt="<%= product.name %>" loading="lazy">
+                                                </a>
+                                                <div class="collection-saved-copy">
+                                                    <a href="/products/<%= product.id %>"><%= product.name %></a>
+                                                    <span>KSh <%= Number(product.price).toLocaleString("en-KE") %></span>
+                                                </div>
+                                                <form class="collection-remove-form" action="/customer/collections/<%= collection.id %>/products/<%= product.id %>/remove" method="POST">
+                                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                    <button type="submit" aria-label="Remove <%= product.name %> from <%= collection.name %>">Remove</button>
+                                                </form>
+                                            </article>
+                                        <% }); %>
+                                    </div>
+                                <% } else { %>
+                                    <p class="collection-empty">No saved products yet. Add something you love from New Arrivals.</p>
+                                <% } %>
+                                <div class="collection-card-actions">
+                                    <form action="/customer/collections/<%= collection.id %>/delete" method="POST">
+                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                        <button type="submit">Delete collection</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </article>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="collection-empty-state">
+                    <h3>Start your first collection</h3>
+                    <p>Create a collection above, then save products to it from New Arrivals.</p>
+                </div>
+            <% } %>
+        </section>
+
+        <section class="panel engagement-section" id="referrals">
+            <h2>Referral center</h2>
+            <p class="muted">Invite friends with your personal link. When a referred friend completes their first successful paid order, you earn 100 shopping points.</p>
+            <label for="referral-link">Your invite link</label>
+            <input class="referral-link" id="referral-link" type="url" readonly value="<%= engagementDashboard.referralUrl %>">
+            <button type="button" id="copy-referral-link">Copy invite link</button>
+            <p role="status" id="referral-copy-status"></p>
+            <div class="engagement-grid">
+                <article class="engagement-card"><h3>Friends joined</h3><p><strong><%= engagementDashboard.referralSummary.referral_count %></strong></p></article>
+                <article class="engagement-card"><h3>First paid order</h3><p><strong><%= engagementDashboard.referralSummary.first_order_count %></strong></p></article>
+                <article class="engagement-card"><h3>Referral rewards</h3><p><strong>100 points</strong> per first successful paid order</p></article>
+            </div>
+            <% if (engagementDashboard.referrals.length) { %>
+                <ul><% engagementDashboard.referrals.forEach(function(referral) { %><li><%= referral.customer_name %> · <%= referral.status === "first_order" ? "First paid order" : "Joined" %></li><% }); %></ul>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="order-history">
+            <h2>Order history &amp; status tracking</h2>
+            <% if (refundSubmitted) { %><p role="status">Your refund request was submitted. It will be reviewed manually; approved refunds are transferred outside this website.</p><% } %>
+            <% if (!orders || orders.length === 0) { %>
+                <p class="muted">You have not placed any orders yet.</p>
+                <a class="primary-link" href="/">Browse products</a>
+            <% } else { %>
+                <div class="orders">
+                        <% orders.forEach(function(order) { %>
+                            <section class="order-card" aria-label="Order <%= order.id %>">
+                                <div class="order-heading">
+                                    <div>
+                                        <h2>Order #<%= order.id %></h2>
+                                        <p class="muted"><%= new Date(order.created_at).toLocaleDateString("en-KE") %></p>
+                                        <p><span class="status <%= order.status %>"><%= order.status %></span></p>
+                                        <p class="muted"><%= order.item_count %> item<%= order.item_count === 1 ? '' : 's' %></p>
+                                        <% if (order.status === "cancelled") { %>
+                                            <p class="tracking-cancelled">This order was cancelled.</p>
+                                        <% } else { %>
+                                            <% const trackingStages = ["pending", "paid", "processing", "shipped", "delivered"]; %>
+                                            <% const currentStage = trackingStages.indexOf(order.status); %>
+                                            <ol class="tracking" aria-label="Order progress: <%= order.status %>">
+                                                <% trackingStages.forEach(function(stage, index) { %>
+                                                    <li class="<%= currentStage >= 0 && index <= currentStage ? 'completed' : '' %>"><%= stage %></li>
+                                                <% }); %>
+                                            </ol>
+                                        <% } %>
+                                        <% if (order.shipping_address) { %>
+                                            <p class="muted">Recipient: <%= order.recipient_name || user.name %></p>
+                                            <p class="muted">Deliver to: <%= order.shipping_address %>, <%= [order.shipping_city, order.shipping_region, order.shipping_postal_code].filter(Boolean).join(", ") %></p>
+                                        <% } %>
+                                        <% if (order.recipient_phone) { %>
+                                            <p class="muted">Delivery contact: <%= order.recipient_phone %></p>
+                                        <% } %>
+                                    </div>
+                                    <div>
+                                        <p class="order-total">Total: KSh <%= Number(order.total).toLocaleString("en-KE") %></p>
+                                    <% if (order.can_cancel) { %>
+                                        <form action="/customer/orders/<%= order.id %>/cancel" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <button class="cancel-order-button" type="submit">Cancel order</button>
+                                        </form>
+                                    <% } %>
+                                    <% if (order.can_request_refund) { %>
+                                    <form action="/customer/orders/<%= order.id %>/refunds" method="POST" class="dashboard-form">
+                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                        <label for="refund-reason-<%= order.id %>">Request a refund</label>
+                                        <textarea id="refund-reason-<%= order.id %>" name="reason" maxlength="1000" required placeholder="Tell us why you are requesting a refund"></textarea>
+                                        <button class="action-button" type="submit">Submit refund request</button>
+                                    </form>
+                                    <p class="muted">Requests are manually reviewed; submitting does not automatically transfer money.</p>
+                                    <% } else if (order.refund_status) { %>
+                                    <p><strong>Refund request:</strong> <span class="status <%= order.refund_status %>"><%= order.refund_status %></span></p>
+                                    <p class="muted"><%= order.refund_reason %></p>
+                                    <% } %>
+                                    </div>
+                                </div>
+                                <div class="order-items">
+                                    <% const items = itemsByOrder[order.id] || []; %>
+                                    <% if (items.length > 0) { %>
+                                        <% items.forEach(function(item) { %>
+                                            <article class="order-item">
+                                                <% if (item.image) { %>
+                                                    <img class="order-item-image" src="<%= item.image %>" alt="<%= item.product_name %>">
+                                                <% } else { %>
+                                                    <div class="order-item-image" aria-hidden="true"></div>
+                                                <% } %>
+                                                <div>
+                                                    <a class="order-item-name" href="/products/<%= item.product_id %>"><%= item.product_name %></a>
+                                                    <p class="muted">Quantity: <%= item.quantity %> × KSh <%= Number(item.price).toLocaleString("en-KE") %></p>
+                                                    <% if (item.seller_decision === "rejected") { %><p class="status cancelled">Seller cannot fulfill these items. The marketplace admin will contact you about the payment adjustment; no refund has been issued automatically.</p><% } else if (item.seller_decision === "accepted") { %><p class="muted">Seller accepted these items for fulfillment.</p><% } %>
+                                                    <p class="muted">Seller fulfillment: <%= item.seller_fulfillment_status %><% if (item.tracking_number) { %> · Tracking: <%= item.tracking_number %><% } %></p>
+                                                    <% if (item.imageAttribution) { %>
+                                                        <p class="muted">
+                                                            Photo by <a href="<%= item.imageAttribution.sourceUrl %>" target="_blank" rel="noopener noreferrer"><%= item.imageAttribution.author %></a>,
+                                                            <a href="<%= item.imageAttribution.licenseUrl %>" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
+                                                        </p>
+                                                    <% } %>
+                                                </div>
+                                                <p class="order-item-price">KSh <%= Number(item.line_total).toLocaleString("en-KE") %></p>
+                                            </article>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <p class="muted">No product details are available for this order.</p>
+                                    <% } %>
+                                </div>
+                            </section>
+                        <% }); %>
+                </div>
+            <% } %>
+            <% if (refundRequests && refundRequests.length) { %>
+                <h3>Refund request history</h3>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Order</th><th>Reason</th><th>Status</th><th>Admin update</th><th>Last updated</th></tr></thead>
+                        <tbody>
+                            <% refundRequests.forEach(function(request) { %>
+                                <tr>
+                                    <td>#<%= request.order_id %></td>
+                                    <td><%= request.reason %></td>
+                                    <td><span class="status <%= request.status %>"><%= request.status %></span></td>
+                                    <td><%= request.admin_note || "Awaiting review" %></td>
+                                    <td><%= new Date(request.updated_at).toLocaleDateString("en-KE") %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="muted">A “refunded” status means an administrator confirmed a manual transfer; this website does not issue automatic payment-provider refunds.</p>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="wallet">
+            <h2>Wallet &amp; payment methods</h2>
+            <p class="muted">View your order payments and manage your M-Pesa number. This marketplace does not hold a cash balance or store card details.</p>
+            <p><strong>Saved M-Pesa number:</strong> <%= customerProfile.mpesa_phone || "Not set" %></p>
+            <% if (payments && payments.length) { %>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Order</th><th>Date</th><th>Method</th><th>Phone</th><th>Amount</th><th>Status</th><th>Reference</th><th>Action</th></tr></thead>
+                        <tbody>
+                            <% payments.forEach(function(payment) { %>
+                                <tr>
+                                    <td>#<%= payment.order_id %></td>
+                                    <td><%= new Date(payment.created_at).toLocaleDateString("en-KE") %></td>
+                                    <td><%= payment.method.replace(/_/g, " ") %></td>
+                                    <td><%= payment.phone_number || "—" %></td>
+                                    <td>KSh <%= Number(payment.amount).toLocaleString("en-KE") %></td>
+                                    <td><span class="status <%= payment.status %>"><%= payment.status %></span></td>
+                                    <td><%= payment.transaction_reference || "—" %></td>
+                                    <td>
+                                        <% if (payment.can_retry) { %>
+                                            <form action="/payments/mpesa/retry/<%= payment.order_id %>" method="POST" class="dashboard-form">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                                <label for="mpesa-retry-phone-<%= payment.id %>">M-Pesa number</label>
+                                                <input
+                                                    id="mpesa-retry-phone-<%= payment.id %>"
+                                                    name="phoneNumber"
+                                                    type="tel"
+                                                    inputmode="tel"
+                                                    autocomplete="tel"
+                                                    pattern="(?:\+?254|0)[17][0-9]{8}"
+                                                    placeholder="07XXXXXXXX"
+                                                    value="<%= customerProfile.mpesa_phone || payment.phone_number || '' %>"
+                                                    required
+                                                >
+                                                <button class="action-button" type="submit">Retry payment</button>
+                                            </form>
+                                        <% } else if (payment.method === "mpesa" && payment.status === "pending") { %>
+                                            <span class="muted">Awaiting Safaricom confirmation</span>
+                                        <% } else { %>
+                                            <span class="muted">—</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p class="muted">Your payment history will appear here after you place an order.</p>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="saved-items">
+            <h2>Saved items &amp; wishlist</h2>
+            <% if (engagementDashboard.wishlistAlerts.length) { %>
+                <h3>Wishlist alerts</h3>
+                <% engagementDashboard.wishlistAlerts.forEach(function(alert) { %>
+                    <p class="wishlist-alert"><a href="/products/<%= alert.product_id %>"><%= alert.product_name %></a>: <%= alert.message %><span class="muted"> · <%= new Date(alert.created_at).toLocaleString("en-KE") %></span><% if (!alert.emailed_at) { %><span class="muted"> · <%= Number(customerProfile.email_notifications ?? 1) === 1 ? "Email pending (SMTP may need setup)" : "Email notifications disabled" %></span><% } %></p>
+                <% }); %>
+            <% } %>
+            <% if (savedItems && savedItems.length) { %>
+                <div class="saved-grid">
+                    <% savedItems.forEach(function(item) { %>
+                        <article class="saved-card">
+                            <% if (item.image) { %><img src="<%= item.image %>" alt="<%= item.name %>"><% } %>
+                            <h3><a class="order-item-name" href="/products/<%= item.id %>"><%= item.name %></a></h3>
+                            <p>KSh <%= Number(item.price).toLocaleString("en-KE") %></p>
+                            <p class="muted"><%= item.business_name || "Marketplace seller" %> · <%= item.stock > 0 ? "In stock" : "Out of stock" %></p>
+                            <form action="/customer/wishlist/<%= item.id %>/alerts" method="POST" class="dashboard-form">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <label><input type="checkbox" name="alertPriceDrop" <%= item.alert_price_drop ? "checked" : "" %>> Email me if price drops</label>
+                                <label><input type="checkbox" name="alertBackInStock" <%= item.alert_back_in_stock ? "checked" : "" %>> Email me when back in stock</label>
+                                <button class="action-button" type="submit">Save alert settings</button>
+                            </form>
+                            <form action="/customer/wishlist/<%= item.id %>/remove" method="POST">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button class="action-button" type="submit">Remove saved item</button>
+                            </form>
+                            <form action="/customer/wishlist/<%= item.id %>/cart" method="POST">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button class="action-button" type="submit" <%= item.stock <= 0 ? "disabled" : "" %>><%= item.stock <= 0 ? "Out of stock" : "Move to cart" %></button>
+                            </form>
+                        </article>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p class="muted">Save products from the marketplace to build your wishlist.</p>
+                <a class="primary-link" href="/">Browse products</a>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="communication-hub">
+            <h2>Seller communication hub</h2>
+            <p class="muted">Send order-related questions to the seller. Replies will appear here.</p>
+            <% if (messageRecipients && messageRecipients.length) { %>
+                <div class="communication-grid">
+                    <% messageRecipients.forEach(function(recipient) { %>
+                        <% const threadMessages = messages.filter(function(message) { return message.order_id === recipient.order_id && message.seller_id === recipient.seller_id; }).slice().reverse(); %>
+                        <article class="communication-card">
+                            <h3>Order #<%= recipient.order_id %> · <%= recipient.seller_name %></h3>
+                            <div class="message-list">
+                                <% threadMessages.forEach(function(message) { %>
+                                    <div class="message-bubble<%= message.sent_by_customer ? ' customer-message' : '' %>">
+                                        <strong><%= message.sender_name %></strong>
+                                        <span class="muted"> · <%= new Date(message.created_at).toLocaleString("en-KE") %></span>
+                                        <div><%= message.message %></div>
+                                    </div>
+                                <% }); %>
+                                <% if (!threadMessages.length) { %><p class="muted">No messages yet.</p><% } %>
+                            </div>
+                            <form class="dashboard-form" action="/customer/orders/<%= recipient.order_id %>/messages" method="POST">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <input type="hidden" name="sellerId" value="<%= recipient.seller_id %>">
+                                <label>Message seller
+                                    <textarea name="message" maxlength="1000" required></textarea>
+                                </label>
+                                <button class="action-button" type="submit">Send message</button>
+                            </form>
+                        </article>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p class="muted">After placing an order, you can message its seller here.</p>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="reviews-panel">
+            <h2>Reviews &amp; ratings</h2>
+            <% if (reviewableProducts && reviewableProducts.length) { %>
+                <div class="review-grid">
+                    <% reviewableProducts.forEach(function(product) { %>
+                        <article class="review-card">
+                            <h3><a class="order-item-name" href="/products/<%= product.id %>"><%= product.name %></a></h3>
+                            <form class="dashboard-form" action="/customer/products/<%= product.id %>/reviews" method="POST">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <label>Rating
+                                    <select name="rating" required>
+                                        <option value="">Choose stars</option>
+                                        <option value="5">5 — Excellent</option>
+                                        <option value="4">4 — Good</option>
+                                        <option value="3">3 — Okay</option>
+                                        <option value="2">2 — Poor</option>
+                                        <option value="1">1 — Bad</option>
+                                    </select>
+                                </label>
+                                <label>Review
+                                    <textarea name="comment" maxlength="1000" placeholder="Share your experience"></textarea>
+                                </label>
+                                <button class="action-button" type="submit">Submit review</button>
+                            </form>
+                        </article>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p class="muted">Products you have purchased and not yet reviewed will appear here.</p>
+            <% } %>
+            <% if (customerReviews && customerReviews.length) { %>
+                <h3>Your previous reviews</h3>
+                <% customerReviews.forEach(function(review) { %>
+                    <article class="review-card">
+                        <h3><a class="order-item-name" href="/products/<%= review.product_id %>"><%= review.product_name %></a></h3>
+                        <form class="dashboard-form" action="/customer/products/<%= review.product_id %>/reviews/update" method="POST">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <label>Rating
+                                <select name="rating" required>
+                                    <% [5, 4, 3, 2, 1].forEach(function(rating) { %>
+                                        <option value="<%= rating %>" <%= Number(review.rating) === rating ? "selected" : "" %>><%= rating %> — <%= rating === 5 ? "Excellent" : rating === 4 ? "Good" : rating === 3 ? "Okay" : rating === 2 ? "Poor" : "Bad" %></option>
+                                    <% }); %>
+                                </select>
+                            </label>
+                            <label>Review
+                                <textarea name="comment" maxlength="1000"><%= review.comment || "" %></textarea>
+                            </label>
+                            <button class="action-button" type="submit">Update review</button>
+                        </form>
+                    </article>
+                <% }); %>
+            <% } %>
+        </section>
+
+        <section class="panel dashboard-section" id="shipping-profile">
+            <h2>Shipping &amp; profile manager</h2>
+            <p class="muted">Saved delivery details are attached to new orders. Update your account name or email in <a href="/profile">profile settings</a>.</p>
+            <form class="dashboard-form" action="/customer/profile" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div class="profile-grid">
+                    <label>Contact phone
+                        <input name="phone" type="tel" inputmode="tel" autocomplete="tel" pattern="(?:\+?254|0)[17][0-9]{8}" placeholder="07XXXXXXXX" value="<%= customerProfile.phone || '' %>">
+                    </label>
+                    <label>Preferred M-Pesa number
+                        <input name="mpesaPhone" type="tel" inputmode="tel" autocomplete="tel" pattern="(?:\+?254|0)[17][0-9]{8}" placeholder="07XXXXXXXX" value="<%= customerProfile.mpesa_phone || '' %>">
+                    </label>
+                    <label>Delivery address
+                        <input name="shippingAddress" maxlength="500" autocomplete="street-address" value="<%= customerProfile.shipping_address || '' %>">
+                    </label>
+                    <label>Town / city
+                        <input name="shippingCity" maxlength="120" autocomplete="address-level2" value="<%= customerProfile.shipping_city || '' %>">
+                    </label>
+                    <label>County / region
+                        <input name="shippingRegion" maxlength="120" autocomplete="address-level1" value="<%= customerProfile.shipping_region || '' %>">
+                    </label>
+                    <label>Postal code
+                        <input name="shippingPostalCode" maxlength="30" autocomplete="postal-code" value="<%= customerProfile.shipping_postal_code || '' %>">
+                    </label>
+                </div>
+                <label><input type="checkbox" name="emailNotifications" <%= customerProfile.email_notifications === undefined || Number(customerProfile.email_notifications) === 1 ? "checked" : "" %>> Email me customer updates, including wishlist alerts and followed-shop product or price updates</label>
+                <button class="action-button" type="submit">Save shipping profile</button>
+            </form>
+        </section>
+            </div>
+        </div>
+    </main>
+    <script src="/js/main.js" defer></script>
+    <script nonce="<%= cspNonce %>">
+        const allRecommendationsButton = document.querySelector("[data-show-recommendations]");
+        if (allRecommendationsButton) {
+            allRecommendationsButton.addEventListener("click", () => {
+                document.querySelectorAll(".recommendation-card[hidden]").forEach((card) => {
+                    card.hidden = false;
+                });
+                allRecommendationsButton.hidden = true;
+            });
+        }
+
+        const featuredTrack = document.querySelector("#featured-product-track");
+        if (featuredTrack) {
+            document.querySelectorAll("[data-featured-scroll]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const card = featuredTrack.querySelector(".featured-card");
+                    if (!card) return;
+                    const distance = (card.getBoundingClientRect().width + 16) * Number(button.dataset.featuredScroll);
+                    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+                    featuredTrack.scrollBy({ left: distance, behavior });
+                });
+            });
+        }
+
+        const referralLink = document.querySelector("#referral-link");
+        const copyReferralButton = document.querySelector("#copy-referral-link");
+        const referralCopyStatus = document.querySelector("#referral-copy-status");
+        if (referralLink && copyReferralButton && referralCopyStatus) {
+            copyReferralButton.addEventListener("click", async () => {
+                try {
+                    await navigator.clipboard.writeText(referralLink.value);
+                    referralCopyStatus.textContent = "Invite link copied.";
+                } catch (error) {
+                    console.error("Could not copy the referral link:", error);
+                    referralLink.select();
+                    referralCopyStatus.textContent = "Select and copy the invite link above.";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | The Marketplace</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #172033;
+        }
+        header {
+            background: #172554;
+            color: white;
+            padding: 20px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .brand-logo {
+            display: block;
+            max-height: 72px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 16px rgba(14, 116, 144, 0.2));
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 16px;
+        }
+        .cart-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .cart-icon {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.8;
+        }
+        .cart-badge {
+            background: #f59e0b;
+            color: #111827;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            min-width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+        }
+        main {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 16px 40px;
+        }
+        .cart-layout {
+            display: grid;
+            grid-template-columns: 1.3fr 0.7fr;
+            gap: 24px;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+            padding: 22px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 14px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+        input[type="number"] {
+            width: 70px;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+        }
+        input[type="tel"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin: 8px 0 12px;
+        }
+        .checkout-fields {
+            display: grid;
+            gap: 12px;
+            margin: 18px 0;
+        }
+        .checkout-fields label {
+            display: grid;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .checkout-fields input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: inherit;
+        }
+        .checkout-fields .address-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .muted { color: #64748b; }
+        .notice {
+            padding: 12px;
+            border-radius: 8px;
+            background: #eff6ff;
+            color: #1e40af;
+            line-height: 1.5;
+        }
+        .total-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+        }
+        .total {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 10px 0 20px;
+        }
+        .reward-checkout {
+            margin: 14px 0;
+            padding: 12px;
+            border: 1px solid #bfdbfe;
+            border-radius: 9px;
+            background: #eff6ff;
+            color: #1e3a8a;
+        }
+        .reward-checkout label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; }
+        .reward-checkout input {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            font: inherit;
+        }
+        .reward-checkout p { margin: 6px 0 0; color: #475569; font-size: 12px; }
+        .checkout-total-preview { color: #172033; font-weight: 700; }
+        button, .button-link {
+            font: inherit;
+            cursor: pointer;
+            border: 0;
+            border-radius: 6px;
+            padding: 10px 16px;
+            text-decoration: none;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+        }
+        .secondary {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        form { display: inline; }
+        form.checkout-form { display: block; }
+        @media (max-width: 700px) {
+            .cart-layout { grid-template-columns: 1fr; }
+            .checkout-fields .address-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a class="brand-link" href="/" aria-label="The Marketplace home">
+            <img class="brand-logo" src="/images/multivendor-logo.png" alt="Multi Vendor Marketplace logo">
+        </a>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/cart" class="cart-link" aria-label="Shopping cart, <%= cartCount %> items" title="Shopping cart">
+                <svg class="cart-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 8H6"></path>
+                    <circle cx="10" cy="20" r="1"></circle>
+                    <circle cx="18" cy="20" r="1"></circle>
+                </svg>
+                <% if (cartCount > 0) { %>
+                    <span class="cart-badge"><%= cartCount %></span>
+                <% } %>
+            </a>
+            <% if (user) { %>
+                <span>Hi, <%= user.name %></span>
+                <form action="/auth/logout" method="POST" style="display:inline; margin-left:16px;">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit">Logout</button>
+                </form>
+            <% } else { %>
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            <% } %>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Checkout</h1>
+        <% if (typeof payment === "string" && payment === "prompt") { %>
+            <p class="notice" role="status">M-Pesa prompt sent. Complete the request on your phone. Your order will remain pending until M-Pesa confirms payment. <a href="/customer#order-history">View order status</a>.</p>
+        <% } else if (typeof payment === "string" && payment === "failed") { %>
+            <p class="notice" role="status">M-Pesa declined this attempt. Your order is saved; retry the failed payment from your <a href="/customer?payment=retry#wallet">payment history</a>, or cancel the order.</p>
+        <% } else if (typeof checkout === "string" && checkout === "success") { %>
+            <p class="notice" role="status">Your cash-on-delivery order was placed successfully.</p>
+        <% } %>
+        <% if (empty) { %>
+            <div class="panel">
+                <p class="muted">Your cart is empty. Add a product to continue to checkout, where you can choose M-Pesa or cash on delivery.</p>
+                <a class="button-link secondary" href="/">Continue shopping</a>
+            </div>
+        <% } else { %>
+            <div class="cart-layout">
+                <div class="panel">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Qty</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% cartItems.forEach(function(item) { %>
+                                <tr>
+                                    <td>
+                                        <a href="/products/<%= item.id %>"><strong><%= item.name %></strong></a>
+                                    </td>
+                                    <td>
+                                        <% if (Number(item.price) < Number(item.originalPrice)) { %>
+                                            <span class="muted" style="text-decoration:line-through;">KSh <%= Number(item.originalPrice).toLocaleString("en-KE") %></span>
+                                            <strong>KSh <%= Number(item.price).toLocaleString("en-KE") %></strong>
+                                        <% } else { %>
+                                            KSh <%= Number(item.price).toLocaleString("en-KE") %>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <form action="/cart/update/<%= item.id %>" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <input type="number" name="quantity" min="1" max="<%= item.stock %>" value="<%= item.quantity %>">
+                                            <button type="submit">Update</button>
+                                        </form>
+                                    </td>
+                                    <td>KSh <%= Number(item.lineTotal).toLocaleString("en-KE") %></td>
+                                    <td>
+                                        <form action="/cart/remove/<%= item.id %>" method="POST">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                            <button class="secondary" type="submit">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <aside class="panel total-box">
+                    <h2>Secure payment</h2>
+                    <p class="muted">Order total</p>
+                    <div class="total">KSh <%= Number(total).toLocaleString("en-KE") %></div>
+                    <% if (user && rewardPoints > 0) { %>
+                        <div class="reward-checkout">
+                            <label>Use shopping points
+                                <input
+                                    type="number"
+                                    id="cod-points-preview"
+                                    data-points-redeem
+                                    min="0"
+                                    max="<%= maxRedeemPoints %>"
+                                    step="100"
+                                    value="0"
+                                    <%= maxRedeemPoints < 100 ? "disabled" : "" %>
+                                >
+                            </label>
+                            <p><%= rewardPoints.toLocaleString("en-KE") %> points available · 100 points = KSh 50 off.</p>
+                            <p>Use up to <%= maxRedeemPoints.toLocaleString("en-KE") %> points on this cart (20% of subtotal maximum).</p>
+                            <p>Estimated discount: <strong data-reward-discount>KSh 0</strong></p>
+                            <p class="checkout-total-preview">Estimated total: <strong data-reward-total>KSh <%= Number(total).toLocaleString("en-KE") %></strong></p>
+                        </div>
+                    <% } else if (user) { %>
+                        <p class="notice">Earn points on delivered orders and shopping missions. You need at least 100 points to redeem KSh 50 off.</p>
+                    <% } %>
+                    <% if (!user) { %>
+                        <p class="notice" role="status">Create an account before placing your order. Your cart will be saved while you register. Already registered? <a href="/login">Log in</a>.</p>
+                    <% } %>
+                    <form id="checkout-form" class="checkout-form" action="/cart/checkout" method="POST" data-reward-payment>
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <% if (user && rewardPoints > 0) { %>
+                            <input type="hidden" name="pointsToRedeem" value="0" data-points-form-value>
+                        <% } %>
+                        <section class="checkout-fields" aria-labelledby="delivery-information-heading">
+                            <h3 id="delivery-information-heading">Delivery information</h3>
+                            <label for="recipient-name">Full name</label>
+                            <input id="recipient-name" name="recipientName" type="text" maxlength="100" autocomplete="name" value="<%= user ? user.name : '' %>" required>
+                            <label for="shipping-address">Delivery address</label>
+                            <input id="shipping-address" name="shippingAddress" type="text" maxlength="500" autocomplete="street-address" value="<%= customerProfile.shipping_address || '' %>" required>
+                            <div class="address-grid">
+                                <label for="shipping-city">Town / city
+                                    <input id="shipping-city" name="shippingCity" type="text" maxlength="120" autocomplete="address-level2" value="<%= customerProfile.shipping_city || '' %>">
+                                </label>
+                                <label for="shipping-region">County / region
+                                    <input id="shipping-region" name="shippingRegion" type="text" maxlength="120" autocomplete="address-level1" value="<%= customerProfile.shipping_region || '' %>">
+                                </label>
+                                <label for="shipping-postal-code">Postal code
+                                    <input id="shipping-postal-code" name="shippingPostalCode" type="text" maxlength="30" autocomplete="postal-code" value="<%= customerProfile.shipping_postal_code || '' %>">
+                                </label>
+                            </div>
+                        </section>
+                        <section class="checkout-fields" aria-labelledby="payment-method-heading">
+                            <h3 id="payment-method-heading">Payment method</h3>
+                            <p class="muted" role="status" data-checkout-progress hidden>Submitting your order. Please wait and do not submit another payment request.</p>
+                            <% if (mpesaConfigured) { %>
+                                <label for="mpesa-phone">M-Pesa phone number</label>
+                                <input
+                                    id="mpesa-phone"
+                                    name="phoneNumber"
+                                    type="tel"
+                                    inputmode="tel"
+                                    autocomplete="tel"
+                                    placeholder="07XXXXXXXX or 2547XXXXXXXX"
+                                    pattern="(?:\+?254|0)[17][0-9]{8}"
+                                    value="<%= savedMpesaPhone || '' %>"
+                                    required
+                                >
+                                <p class="muted">A payment prompt will be sent to this number. Never share your M-Pesa PIN with the seller or marketplace.</p>
+                                <button type="submit" formaction="/payments/mpesa/stk-push">Pay with M-Pesa · <span data-payment-total>KSh <%= Number(total).toLocaleString("en-KE") %></span></button>
+                                <p class="muted" role="status">The order stays pending until M-Pesa confirms payment.</p>
+                            <% } else { %>
+                                <p class="muted" role="status">M-Pesa checkout is not configured. Set your Daraja consumer key, consumer secret, shortcode, and passkey, add a callback token, and set MPESA_CALLBACK_URL to a publicly reachable HTTPS callback URL to enable payment prompts.</p>
+                            <% } %>
+                            <button class="secondary" type="submit" formnovalidate>Place order with cash on delivery</button>
+                        </section>
+                    </form>
+                    <p style="margin-top: 14px;"><a class="button-link secondary" href="/">Continue shopping</a></p>
+                </aside>
+            </div>
+        <% } %>
+    </main>
+    <script nonce="<%= cspNonce %>" data-reward-subtotal="<%= Number(total) %>">
+        const rewardSubtotal = Number(document.currentScript.dataset.rewardSubtotal) || 0;
+        document.querySelectorAll("[data-points-redeem]").forEach((input) => {
+            input.addEventListener("input", () => {
+                const points = Math.max(0, Math.min(Number(input.value) || 0, Number(input.max) || 0));
+                const discount = Math.floor(points / 100) * 50;
+                const discountPreview = document.querySelector("[data-reward-discount]");
+                const totalPreview = document.querySelector("[data-reward-total]");
+                if (discountPreview) discountPreview.textContent = `KSh ${discount.toLocaleString("en-KE")}`;
+                const checkoutTotal = `KSh ${Math.max(0, rewardSubtotal - discount).toLocaleString("en-KE")}`;
+                if (totalPreview) totalPreview.textContent = checkoutTotal;
+                document.querySelectorAll("[data-payment-total]").forEach((total) => {
+                    total.textContent = checkoutTotal;
+                });
+
+                const codValue = document.querySelector("[data-points-form-value]");
+                if (codValue && input.id === "cod-points-preview") codValue.value = points;
+            });
+        });
+        document.querySelectorAll("form[data-reward-payment]").forEach((form) => {
+            form.addEventListener("submit", (event) => {
+                const pointsInput = document.querySelector("[data-points-redeem]");
+                const value = Number(pointsInput ? pointsInput.value : 0);
+                if (!Number.isInteger(value) || value % 100 !== 0 || value > Number(pointsInput?.max || 0)) {
+                    event.preventDefault();
+                    window.alert("Enter an eligible points amount in increments of 100.");
+                    return;
+                }
+                form.querySelectorAll("button[type='submit']").forEach((button) => {
+                    button.disabled = true;
+                });
+                const progress = form.querySelector("[data-checkout-progress]");
+                if (progress) progress.hidden = false;
+            });
+        });
+    </script>
+</body>
+</html>
