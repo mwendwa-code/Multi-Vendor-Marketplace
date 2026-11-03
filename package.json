@@ -5,6 +5,9 @@
   "version": "1.0.0",
   "description": "A multi-vendor marketplace built with Express, EJS, and SQLite.",
   "main": "backend/server.js",
+  "engines": {
+    "node": ">=22 <25"
+  },
   "scripts": {
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js"

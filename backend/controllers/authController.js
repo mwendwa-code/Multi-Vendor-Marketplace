@@ -11,12 +11,15 @@ const adminMfa = require("../services/adminMfa");
 const adminMfaChallengeLifetimeMs = 5 * 60 * 1000;
 
 function getGoogleOAuthClient() {
-    const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } = process.env;
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+    const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
+    const redirectBaseUrl = process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI ||
+        (redirectBaseUrl ? new URL("/auth/google/callback", redirectBaseUrl).toString() : "");
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !redirectUri) {
         return null;
     }
 
-    return new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
+    return new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, redirectUri);
 }
 
 function getDashboardPath(role) {
@@ -257,7 +260,9 @@ function getMailer() {
 }
 
 function getAppBaseUrl() {
-    const configuredUrl = process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const configuredUrl = process.env.APP_BASE_URL ||
+        process.env.RENDER_EXTERNAL_URL ||
+        `http://localhost:${process.env.PORT || 3000}`;
     const parsedUrl = new URL(configuredUrl);
     if (
         !["http:", "https:"].includes(parsedUrl.protocol) ||

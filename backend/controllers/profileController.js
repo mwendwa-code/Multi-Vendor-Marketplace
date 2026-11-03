@@ -6,8 +6,9 @@ const crypto = require("crypto");
 const sharp = require("sharp");
 const { normalizeBusinessWebsite } = require("../services/businessWebsite");
 const { recordAuditEvent } = require("../database/audit");
+const { uploadsDirectory } = require("../services/fileStorage");
 
-const logoDirectory = path.join(__dirname, "..", "..", "frontend", "public", "uploads", "seller-logos");
+const logoDirectory = path.join(uploadsDirectory, "seller-logos");
 
 exports.getProfile = async (req, res) => {
     if (!req.session?.user) {

@@ -207,7 +207,12 @@ exports.getDashboardData = async (customer) => {
         [id]
     );
     const referralCode = referralRows[0]?.referral_code;
-    const referralUrl = new URL("/register", process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`);
+    const referralUrl = new URL(
+        "/register",
+        process.env.APP_BASE_URL ||
+            process.env.RENDER_EXTERNAL_URL ||
+            `http://localhost:${process.env.PORT || 3000}`
+    );
     if (referralCode) referralUrl.searchParams.set("ref", referralCode);
 
     return {

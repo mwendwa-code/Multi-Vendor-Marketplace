@@ -6,8 +6,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
 const sharp = require("sharp");
-
-const refundEvidenceDirectory = path.join(__dirname, "..", "private", "refund-evidence");
+const { refundEvidenceDirectory } = require("../services/fileStorage");
 
 async function removeRefundEvidence(evidenceKey, context) {
     if (!/^[a-f0-9]{32}\.(?:webp|pdf)$/.test(evidenceKey || "")) return;

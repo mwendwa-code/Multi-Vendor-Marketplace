@@ -15,7 +15,10 @@ if (
   process.env.GOOGLE_CLIENT_SECRET &&
   !process.env.GOOGLE_REDIRECT_URI
 ) {
-  process.env.GOOGLE_REDIRECT_URI = `http://localhost:${process.env.PORT || 3000}/auth/google/callback`;
+  const publicBaseUrl = process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL;
+  if (publicBaseUrl) {
+    process.env.GOOGLE_REDIRECT_URI = new URL("/auth/google/callback", publicBaseUrl).toString();
+  }
 }
 
 const db = require("./database/db");
@@ -39,6 +42,7 @@ const refundEvidenceUpload = require("./middleware/uploadRefundEvidence");
 const { recordAuditEvent } = require("./database/audit");
 const { normalizeBusinessWebsite } = require("./services/businessWebsite");
 const { currentPriceSql } = require("./services/productPricing");
+const { uploadsDirectory } = require("./services/fileStorage");
 const backupDirectory = path.resolve(
   process.env.BACKUP_DIR || path.join(__dirname, "database", "backups")
 );
@@ -91,6 +95,7 @@ app.use(helmet({
 app.use(express.urlencoded({ extended: false, limit: "16kb" }));
 app.use(express.json({ limit: "16kb" }));
 app.use(express.static(path.join(__dirname, "..", "frontend", "public")));
+app.use("/uploads", express.static(uploadsDirectory));
 
 app.use(
   session({
@@ -107,6 +112,15 @@ app.use(
     }
   })
 );
+app.get("/healthz", async (req, res) => {
+  try {
+    await db.execute("SELECT 1");
+    res.status(200).json({ status: "ok" });
+  } catch (error) {
+    console.error("Health check failed:", error.message);
+    res.status(503).json({ status: "unavailable" });
+  }
+});
 app.post("/api/payments/mpesa/callback/:token", paymentController.handleMpesaCallback);
 app.use("/seller/products", productRoutes);
 app.post(
