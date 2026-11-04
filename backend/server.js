@@ -76,7 +76,7 @@ if (isProduction && (!process.env.SESSION_SECRET || sessionSecret.length < 32)) 
   throw new Error("Set SESSION_SECRET to a value of at least 32 characters in production.");
 }
 
-if (process.env.TRUST_PROXY === "true") {
+if (isProduction || process.env.TRUST_PROXY === "true") {
   app.set("trust proxy", 1);
 }
 
