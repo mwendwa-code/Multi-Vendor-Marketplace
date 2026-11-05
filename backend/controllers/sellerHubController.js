@@ -392,7 +392,8 @@ exports.requestPayout = async (req, res) => {
 
             const [inserted] = await connection.execute(
                 `INSERT INTO seller_payout_requests (seller_id, amount, payout_phone)
-                 VALUES (?, ?, ?)`,
+                 VALUES (?, ?, ?)
+                 RETURNING id`,
                 [req.session.user.id, amount, payoutPhone]
             );
             return inserted.insertId;
@@ -448,7 +449,7 @@ exports.reviewPayoutRequest = async (req, res) => {
 
             if (status === "approved") {
                 const [balanceRows] = await connection.execute(
-                    `SELECT MAX(0,
+                    `SELECT GREATEST(0,
                                 COALESCE((SELECT SUM(c.seller_net_amount)
                                           FROM commissions c
                                           WHERE c.seller_id = ? AND c.status = 'earned'), 0)

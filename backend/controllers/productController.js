@@ -87,7 +87,8 @@ exports.createProduct = async (req, res) => {
             const [result] = await connection.execute(
                 `INSERT INTO products
                     (seller_id, category_id, name, description, price, stock, image, moderation_status)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+                RETURNING id`,
                 [
                     req.session.user.id,
                     categoryValue,

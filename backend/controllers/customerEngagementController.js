@@ -91,7 +91,7 @@ exports.getDashboardData = async (customer) => {
                 sp.business_description,
                 (SELECT COUNT(*) FROM products p
                  WHERE p.seller_id = u.id AND p.moderation_status = 'approved'
-                   AND p.created_at >= datetime('now', '-30 days')) AS new_products
+                   AND p.created_at >= CURRENT_TIMESTAMP - INTERVAL '30 days') AS new_products
          FROM customer_seller_follows f
          JOIN users u ON u.id = f.seller_id
          LEFT JOIN seller_profiles sp ON sp.user_id = u.id
@@ -123,7 +123,7 @@ exports.getDashboardData = async (customer) => {
          JOIN users u ON u.id = f.seller_id
          LEFT JOIN seller_profiles sp ON sp.user_id = u.id
          WHERE f.customer_id = ? AND p.moderation_status = 'approved'
-           AND p.created_at >= datetime('now', '-90 days')
+           AND p.created_at >= CURRENT_TIMESTAMP - INTERVAL '90 days'
          ORDER BY p.created_at DESC
          LIMIT 12`,
         [id]
@@ -322,7 +322,7 @@ exports.createCollection = async (req, res) => {
         );
         return res.redirect("/customer?collection=created#collections");
     } catch (error) {
-        if (error.code === "SQLITE_CONSTRAINT_UNIQUE") return res.status(409).send("You already have a collection with that name.");
+        if (error.code === "23505" || error.code === "SQLITE_CONSTRAINT_UNIQUE") return res.status(409).send("You already have a collection with that name.");
         console.error("Collection creation error:", error.message);
         return res.status(500).send("Could not create your collection.");
     }

@@ -15,10 +15,10 @@ services:
         value: production
       - key: TRUST_PROXY
         value: "true"
-      - key: DB_PATH
-        value: /var/data/marketplace.db
-      - key: SESSION_DB_PATH
-        value: /var/data/sessions.sqlite
+      - key: DATABASE_URL
+        fromDatabase:
+          name: marketplace-postgres
+          property: connectionString
       - key: BACKUP_DIR
         value: /var/data/backups
       - key: UPLOADS_DIR
@@ -65,3 +65,9 @@ services:
         sync: false
       - key: MPESA_CALLBACK_TOKEN
         sync: false
+
+databases:
+  - name: marketplace-postgres
+    databaseName: marketplace_db
+    user: marketplace_user
+    plan: free

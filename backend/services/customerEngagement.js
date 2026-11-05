@@ -29,7 +29,9 @@ function escapeHtml(value) {
 }
 
 exports.recordProductView = async (customerId, productId) => {
-    const [dayRows] = await db.execute("SELECT date('now', '+3 hours') AS activity_date");
+    const [dayRows] = await db.execute(
+        "SELECT TO_CHAR((CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours')::date, 'YYYY-MM-DD') AS activity_date"
+    );
     const activityDate = dayRows[0].activity_date;
 
     await db.transaction(async (connection) => {
@@ -268,13 +270,13 @@ exports.awardReferralForFirstOrder = async (connection, referredCustomerId) => {
 
 exports.refreshMissionsAndBadges = async (customerId) => {
     const [activityRows] = await db.execute(
-        `SELECT date('now', '+3 hours') AS today,
+        `SELECT TO_CHAR((CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours')::date, 'YYYY-MM-DD') AS today,
                 (SELECT COUNT(*) FROM customer_product_views
-                 WHERE customer_id = ? AND last_activity_date = date('now', '+3 hours')) AS viewed_today,
+                 WHERE customer_id = ? AND last_activity_date = TO_CHAR((CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours')::date, 'YYYY-MM-DD')) AS viewed_today,
                 (SELECT COUNT(*) FROM wishlists
-                 WHERE customer_id = ? AND date(created_at, '+3 hours') = date('now', '+3 hours')) AS saved_today,
+                 WHERE customer_id = ? AND (created_at + INTERVAL '3 hours')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours')::date) AS saved_today,
                 (SELECT COUNT(*) FROM reviews
-                 WHERE customer_id = ? AND date(created_at, '+3 hours') >= date('now', '+3 hours', '-6 days')) AS reviewed_this_week`,
+                 WHERE customer_id = ? AND (created_at + INTERVAL '3 hours')::date >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours' - INTERVAL '6 days')::date) AS reviewed_this_week`,
         [customerId, customerId, customerId]
     );
     const activity = activityRows[0];
@@ -369,7 +371,7 @@ exports.refreshMissionsAndBadges = async (customerId) => {
     );
     const [streakRows] = await db.execute(
         `SELECT activity_date FROM customer_activity_days
-         WHERE customer_id = ? AND activity_date >= date('now', '+3 hours', '-60 days')
+         WHERE customer_id = ? AND activity_date >= TO_CHAR((CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours' - INTERVAL '60 days')::date, 'YYYY-MM-DD')
          ORDER BY activity_date DESC`,
         [customerId]
     );

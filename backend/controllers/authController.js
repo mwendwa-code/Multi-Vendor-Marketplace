@@ -432,7 +432,7 @@ exports.register = async (req, res) => {
             }
 
             const [result] = await connection.execute(
-                "INSERT INTO users (name, email, password, role, email_verified, referral_code) VALUES (?, ?, ?, ?, 0, ?)",
+                "INSERT INTO users (name, email, password, role, email_verified, referral_code) VALUES (?, ?, ?, ?, 0, ?) RETURNING id",
                 [
                     name.trim(),
                     normalizedEmail,
@@ -478,6 +478,7 @@ exports.register = async (req, res) => {
         }
     } catch (error) {
         if (
+            error.code === "23505" ||
             error.code === "ER_DUP_ENTRY" ||
             error.code === "SQLITE_CONSTRAINT_UNIQUE" ||
             (error.code === "SQLITE_CONSTRAINT" && error.message.includes("users.email"))
@@ -688,7 +689,7 @@ exports.completeGoogleLogin = async (req, res) => {
                     : email;
             const userId = await db.transaction(async (connection) => {
                 const [result] = await connection.execute(
-                    "INSERT INTO users (name, email, password, role, email_verified, referral_code) VALUES (?, ?, ?, ?, 1, ?)",
+                    "INSERT INTO users (name, email, password, role, email_verified, referral_code) VALUES (?, ?, ?, ?, 1, ?) RETURNING id",
                     [displayName, email, hashedPassword, "customer", crypto.randomBytes(8).toString("hex").toUpperCase()]
                 );
                 if (Number.isInteger(referralReferrerId) && referralReferrerId !== result.insertId) {
@@ -818,7 +819,7 @@ exports.requestPasswordReset = async (req, res) => {
             const [recentCodes] = await db.execute(
                 `SELECT created_at FROM password_reset_codes
                  WHERE user_id = ?
-                   AND julianday('now') - julianday(created_at) < (1.0 / 1440)`,
+                   AND created_at >= CURRENT_TIMESTAMP - INTERVAL '1 minute'`,
                 [user.id]
             );
 

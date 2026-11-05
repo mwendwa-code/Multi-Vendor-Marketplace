@@ -27,7 +27,7 @@ if (
 }
 
 const db = require("./database/db");
-const SQLiteSessionStore = require("./middleware/sqliteSessionStore");
+const PostgresSessionStore = require("./middleware/postgresSessionStore");
 const authRoutes = require("./routes/authRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const paymentController = require("./controllers/paymentController");
@@ -68,9 +68,7 @@ app.locals.productImage = (product) => {
 };
 const isProduction = process.env.NODE_ENV === "production";
 const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
-const sessionStore = new SQLiteSessionStore(
-  process.env.SESSION_DB_PATH || path.join(__dirname, "database", "sessions.sqlite")
-);
+const sessionStore = new PostgresSessionStore(db.pool);
 
 if (isProduction && (!process.env.SESSION_SECRET || sessionSecret.length < 32)) {
   throw new Error("Set SESSION_SECRET to a value of at least 32 characters in production.");
@@ -160,8 +158,8 @@ app.get("/", async (req, res) => {
     let sql = `SELECT p.*, c.name AS category_name,
                       ${currentPriceSql("p")} AS current_price,
                       CASE
-                          WHEN datetime('now', '+3 hours') >= datetime(p.promotion_starts_at)
-                           AND datetime('now', '+3 hours') < datetime(p.promotion_ends_at)
+                          WHEN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours') >= p.promotion_starts_at
+                           AND (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours') < p.promotion_ends_at
                           THEN p.promotion_discount_percent ELSE 0
                       END AS current_promotion_discount_percent,
                       sp.business_name, sp.business_website,
@@ -172,7 +170,7 @@ app.get("/", async (req, res) => {
       WHERE p.moderation_status = 'approved'`;
 
     if (searchQuery) {
-      sql += ` AND (p.name LIKE ? OR p.description LIKE ?)`;
+      sql += ` AND (p.name ILIKE ? OR p.description ILIKE ?)`;
       const likeTerm = `%${searchQuery}%`;
       params.push(likeTerm, likeTerm);
     }
@@ -313,7 +311,7 @@ app.get("/admin", requireLogin, requireRole("admin"), async (req, res) => {
       `SELECT r.id, r.seller_id, r.amount, r.payout_phone, r.status, r.created_at, r.updated_at,
               u.name AS seller_name, u.email AS seller_email,
               sp.business_name,
-              MAX(0, COALESCE((SELECT SUM(c.seller_net_amount) FROM commissions c
+              GREATEST(0, COALESCE((SELECT SUM(c.seller_net_amount) FROM commissions c
                                WHERE c.seller_id = r.seller_id AND c.status = 'earned'), 0)
                   - COALESCE((SELECT SUM(pr.amount) FROM seller_payout_requests pr
                               WHERE pr.seller_id = r.seller_id
@@ -339,10 +337,10 @@ app.get("/admin", requireLogin, requireRole("admin"), async (req, res) => {
            WHERE status = 'rejected') AS failed_count,
           (SELECT COUNT(*) FROM seller_payout_requests) AS all_count,
           COALESCE((SELECT SUM(amount) FROM seller_payout_requests
-                    WHERE status = 'paid' AND updated_at >= datetime('now', '-30 days')), 0) AS paid_last_30_days,
+                    WHERE status = 'paid' AND updated_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'), 0) AS paid_last_30_days,
           COALESCE((SELECT SUM(amount) FROM seller_payout_requests
                     WHERE status = 'paid'), 0) AS paid_all_time,
-          MAX(0, COALESCE((SELECT SUM(seller_net_amount) FROM commissions
+          GREATEST(0, COALESCE((SELECT SUM(seller_net_amount) FROM commissions
                            WHERE status = 'earned'), 0)
               - COALESCE((SELECT SUM(amount) FROM seller_payout_requests
                           WHERE status = 'paid'), 0)) AS outstanding_vendor_payments`
@@ -365,7 +363,7 @@ app.get("/admin", requireLogin, requireRole("admin"), async (req, res) => {
                AND EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.id AND p.status = 'successful')) AS gross_revenue,
           (SELECT COALESCE(SUM(o.total), 0) FROM orders o
              WHERE o.status IN ('paid', 'processing', 'shipped', 'delivered')
-               AND o.created_at >= datetime('now', '-30 days')
+               AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
                AND EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.id AND p.status = 'successful')) AS revenue_last_30_days,
           (SELECT COUNT(*) FROM products WHERE moderation_status = 'approved') AS live_product_count,
           (SELECT COUNT(*) FROM products WHERE moderation_status = 'pending') AS pending_product_count,
@@ -470,7 +468,7 @@ app.get("/admin", requireLogin, requireRole("admin"), async (req, res) => {
       : 1;
     const deliveryFilterSql = `(? = 'all' OR o.status = ?
           OR (? = 'delayed' AND o.status NOT IN ('delivered', 'cancelled')
-              AND julianday('now') - julianday(COALESCE(f.updated_at, o.created_at)) >= 7)
+              AND COALESCE(f.updated_at, o.created_at) <= CURRENT_TIMESTAMP - INTERVAL '7 days')
           OR (? = 'issues' AND ((dc.id IS NOT NULL AND dc.status != 'resolved') OR o.status = 'cancelled'
               OR EXISTS (SELECT 1 FROM payments failed_payment
                          WHERE failed_payment.order_id = o.id AND failed_payment.status = 'failed'))))`;
@@ -501,13 +499,13 @@ app.get("/admin", requireLogin, requireRole("admin"), async (req, res) => {
               (SELECT p.method FROM payments p WHERE p.order_id = o.id ORDER BY p.created_at DESC LIMIT 1) AS payment_method,
               (SELECT p.status FROM payments p WHERE p.order_id = o.id ORDER BY p.created_at DESC LIMIT 1) AS payment_status,
               oi.seller_id, COALESCE(sp.business_name, s.name) AS business_name,
-              GROUP_CONCAT(DISTINCT p.name) AS product_names,
+              STRING_AGG(DISTINCT p.name, ', ') AS product_names,
               COALESCE(f.status, 'pending') AS fulfillment_status,
               f.tracking_number, f.updated_at AS fulfillment_updated_at,
               dc.id AS complaint_id, dc.complaint, dc.status AS complaint_status,
               dc.follow_up_note, dc.created_at AS complaint_created_at,
               CASE WHEN o.status NOT IN ('delivered', 'cancelled')
-                         AND julianday('now') - julianday(COALESCE(f.updated_at, o.created_at)) >= 7
+                         AND COALESCE(f.updated_at, o.created_at) <= CURRENT_TIMESTAMP - INTERVAL '7 days'
                    THEN 1 ELSE 0 END AS is_delayed,
               CASE WHEN o.status = 'cancelled'
                          OR (dc.id IS NOT NULL AND dc.status != 'resolved')
@@ -550,7 +548,7 @@ app.get("/admin", requireLogin, requireRole("admin"), async (req, res) => {
              LEFT JOIN seller_order_fulfillments f
                ON f.order_id = o.id AND f.seller_id = oi.seller_id
              WHERE o.status NOT IN ('delivered', 'cancelled')
-               AND julianday('now') - julianday(COALESCE(f.updated_at, o.created_at)) >= 7
+               AND COALESCE(f.updated_at, o.created_at) <= CURRENT_TIMESTAMP - INTERVAL '7 days'
              GROUP BY o.id, oi.seller_id
           )) AS delayed_count,
           (SELECT COUNT(*) FROM delivery_complaints WHERE status != 'resolved') AS open_complaint_count`
@@ -559,13 +557,13 @@ app.get("/admin", requireLogin, requireRole("admin"), async (req, res) => {
       Object.entries(deliveryStatsRows[0] || {}).map(([key, value]) => [key, Number(value || 0)])
     );
     const [analyticsTrend] = await db.execute(
-      `SELECT strftime('%Y-%m', created_at) AS month,
+      `SELECT TO_CHAR(created_at, 'YYYY-MM') AS month,
               COUNT(*) AS order_count, SUM(total) AS gross_revenue
        FROM orders o
        WHERE o.status IN ('paid', 'processing', 'shipped', 'delivered')
-         AND o.created_at >= datetime('now', '-6 months')
+         AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '6 months'
          AND EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.id AND p.status = 'successful')
-       GROUP BY strftime('%Y-%m', o.created_at)
+       GROUP BY TO_CHAR(o.created_at, 'YYYY-MM')
        ORDER BY month DESC`
     );
     const [refundRequests] = await db.execute(
@@ -595,7 +593,7 @@ app.get("/admin", requireLogin, requireRole("admin"), async (req, res) => {
       `SELECT d.order_id, d.seller_id, d.note AS rejection_reason,
               d.admin_adjustment_status, d.admin_note, d.updated_at,
               s.name AS seller_name, c.name AS customer_name, c.email AS customer_email,
-              GROUP_CONCAT(p.name, ', ') AS rejected_products,
+              STRING_AGG(p.name, ', ') AS rejected_products,
               SUM(oi.quantity * oi.price) AS item_amount
        FROM seller_order_decisions d
        JOIN orders o ON o.id = d.order_id
@@ -653,7 +651,7 @@ app.get("/admin", requireLogin, requireRole("admin"), async (req, res) => {
       sellerOrderRejectionUpdated: req.query.sellerOrderRejection === "updated",
       analyticsTrend,
       backupFile: typeof req.query.backup === "string" &&
-        /^marketplace-\d{8}T\d{6}Z-[a-f0-9]{8}\.sqlite$/.test(req.query.backup)
+        /^marketplace-\d{8}T\d{6}Z-[a-f0-9]{8}\.json$/.test(req.query.backup)
         ? req.query.backup
         : null
     });
@@ -990,7 +988,7 @@ app.post("/admin/commission-rules/overrides/:id/delete", requireLogin, requireRo
 app.post("/admin/payouts/:id/status", requireLogin, requireRole("admin"), sellerHubController.reviewPayoutRequest);
 app.post("/admin/backups", requireLogin, requireRole("admin"), async (req, res, next) => {
   const timestamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const fileName = `marketplace-${timestamp}-${crypto.randomBytes(4).toString("hex")}.sqlite`;
+  const fileName = `marketplace-${timestamp}-${crypto.randomBytes(4).toString("hex")}.json`;
   const destination = path.join(backupDirectory, fileName);
 
   try {
@@ -1010,7 +1008,7 @@ app.post("/admin/backups", requireLogin, requireRole("admin"), async (req, res, 
 });
 
 app.get("/admin/backups/:filename", requireLogin, requireRole("admin"), (req, res, next) => {
-  if (!/^marketplace-\d{8}T\d{6}Z-[a-f0-9]{8}\.sqlite$/.test(req.params.filename)) {
+  if (!/^marketplace-\d{8}T\d{6}Z-[a-f0-9]{8}\.json$/.test(req.params.filename)) {
     return res.status(400).send("Invalid backup file.");
   }
 
@@ -1207,7 +1205,8 @@ app.get("/seller", requireLogin, requireRole("seller"), async (req, res) => {
          ON sd.order_id = o.id AND sd.seller_id = oi.seller_id
        WHERE oi.seller_id = ?
          AND COALESCE(sd.status, 'accepted') != 'rejected'
-         AND date(o.created_at, '+3 hours') = date('now', '+3 hours')
+         AND (o.created_at + INTERVAL '3 hours')::date =
+             (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours')::date
          AND o.status IN ('paid', 'processing', 'shipped', 'delivered')
          AND EXISTS (
            SELECT 1 FROM payments p
@@ -1225,17 +1224,17 @@ app.get("/seller", requireLogin, requireRole("seller"), async (req, res) => {
               END), 0) AS gross_revenue,
               COALESCE(SUM(CASE
                   WHEN o.status IN ('paid', 'processing', 'shipped', 'delivered')
-                   AND o.created_at >= datetime('now', '-30 days')
+                   AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
                   THEN oi.quantity * oi.price ELSE 0
               END), 0) AS revenue_last_30_days,
               COALESCE(SUM(CASE
                   WHEN o.status IN ('paid', 'processing', 'shipped', 'delivered')
-                   AND o.created_at >= datetime('now', '-30 days')
+                   AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
                   THEN oi.quantity ELSE 0
               END), 0) AS units_last_30_days,
               COALESCE(SUM(CASE
                   WHEN o.status IN ('paid', 'processing', 'shipped', 'delivered')
-                   AND o.created_at >= datetime('now', '-7 days')
+                   AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
                   THEN oi.quantity * oi.price ELSE 0
               END), 0) AS revenue_last_7_days,
               COUNT(DISTINCT CASE WHEN o.status = 'cancelled' THEN o.id END) AS cancelled_orders
@@ -1249,7 +1248,7 @@ app.get("/seller", requireLogin, requireRole("seller"), async (req, res) => {
       [req.session.user.id]
     );
     const [monthlyRevenue] = await db.execute(
-      `SELECT strftime('%Y-%m', o.created_at) AS month,
+      `SELECT TO_CHAR(o.created_at, 'YYYY-MM') AS month,
               SUM(oi.quantity * oi.price) AS revenue,
               COUNT(DISTINCT o.id) AS orders
        FROM order_items oi
@@ -1260,8 +1259,8 @@ app.get("/seller", requireLogin, requireRole("seller"), async (req, res) => {
          AND COALESCE(sd.status, 'accepted') != 'rejected'
          AND o.status IN ('paid', 'processing', 'shipped', 'delivered')
          AND EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.id AND p.status = 'successful')
-         AND o.created_at >= datetime('now', '-6 months')
-       GROUP BY strftime('%Y-%m', o.created_at)
+         AND o.created_at >= CURRENT_TIMESTAMP - INTERVAL '6 months'
+       GROUP BY TO_CHAR(o.created_at, 'YYYY-MM')
        ORDER BY month DESC`,
       [req.session.user.id]
     );
@@ -1424,7 +1423,7 @@ app.get("/seller", requireLogin, requireRole("seller"), async (req, res) => {
               c.name AS customer_name, o.status AS order_status,
               COALESCE(MAX(f.status), 'pending') AS seller_fulfillment_status,
               MAX(f.tracking_number) AS tracking_number,
-              GROUP_CONCAT(p.name, ', ') AS seller_products
+              STRING_AGG(p.name, ', ') AS seller_products
        FROM refund_requests r
        JOIN orders o ON o.id = r.order_id
        JOIN users c ON c.id = r.customer_id

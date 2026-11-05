@@ -283,7 +283,10 @@ exports.requestRefund = async (req, res) => {
                     [orderId, req.session.user.id, reason]
                 );
             } catch (error) {
-                if (error.code === "SQLITE_CONSTRAINT" && /UNIQUE constraint failed/.test(error.message)) {
+                if (
+                    error.code === "23505" ||
+                    (error.code === "SQLITE_CONSTRAINT" && /UNIQUE constraint failed/.test(error.message))
+                ) {
                     return "EXISTS";
                 }
                 throw error;

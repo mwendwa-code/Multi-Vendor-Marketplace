@@ -20,8 +20,8 @@ async function getCartProducts(cart) {
         `SELECT p.*, c.name AS category_name,
                 ${currentPriceSql("p")} AS current_price,
                 CASE
-                    WHEN datetime('now', '+3 hours') >= datetime(p.promotion_starts_at)
-                     AND datetime('now', '+3 hours') < datetime(p.promotion_ends_at)
+                    WHEN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours') >= p.promotion_starts_at
+                     AND (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours') < p.promotion_ends_at
                     THEN p.promotion_discount_percent ELSE 0
                 END AS current_promotion_discount_percent
          FROM products p
@@ -54,8 +54,8 @@ exports.getProduct = async (req, res) => {
             `SELECT p.*, c.name AS category_name,
                     ${currentPriceSql("p")} AS current_price,
                     CASE
-                        WHEN datetime('now', '+3 hours') >= datetime(p.promotion_starts_at)
-                         AND datetime('now', '+3 hours') < datetime(p.promotion_ends_at)
+                        WHEN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours') >= p.promotion_starts_at
+                         AND (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours') < p.promotion_ends_at
                         THEN p.promotion_discount_percent ELSE 0
                     END AS current_promotion_discount_percent,
                     sp.business_name, sp.business_website,

@@ -3,14 +3,16 @@
   "private": true,
   "name": "multi-vendor-marketplace",
   "version": "1.0.0",
-  "description": "A multi-vendor marketplace built with Express, EJS, and SQLite.",
+  "description": "A multi-vendor marketplace built with Express, EJS, and PostgreSQL.",
   "main": "backend/server.js",
   "engines": {
     "node": ">=22 <25"
   },
   "scripts": {
     "start": "node backend/server.js",
-    "dev": "nodemon backend/server.js"
+    "dev": "nodemon backend/server.js",
+    "migrate:sqlite": "node scripts/migrate-sqlite-to-postgres.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
@@ -25,8 +27,8 @@
     "google-auth-library": "^11.3.1",
     "helmet": "^8.3.0",
     "multer": "^2.5.0",
-    "mysql2": "^3.24.6",
     "nodemailer": "^10.2.1",
+    "pg": "^8.23.1",
     "sharp": "^0.35.5",
     "sqlite3": "^6.0.1"
   },

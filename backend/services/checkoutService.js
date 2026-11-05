@@ -120,8 +120,8 @@ async function createCheckoutOrder({
             `SELECT p.*, c.name AS category_name,
                     ${currentPriceSql("p")} AS current_price,
                     CASE
-                        WHEN datetime('now', '+3 hours') >= datetime(p.promotion_starts_at)
-                         AND datetime('now', '+3 hours') < datetime(p.promotion_ends_at)
+                        WHEN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours') >= p.promotion_starts_at
+                         AND (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '3 hours') < p.promotion_ends_at
                         THEN p.promotion_discount_percent ELSE 0
                     END AS current_promotion_discount_percent
              FROM products p
@@ -177,7 +177,8 @@ async function createCheckoutOrder({
             `INSERT INTO orders
                 (customer_id, total, status, recipient_name, shipping_address, shipping_city, shipping_region,
                  shipping_postal_code, recipient_phone, points_redeemed, discount_amount)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id`,
             [
                 userId,
                 total,
@@ -200,7 +201,8 @@ async function createCheckoutOrder({
             const [itemResult] = await connection.execute(
                 `INSERT INTO order_items
                     (order_id, product_id, seller_id, quantity, price, promotion_discount_percent)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
+                 VALUES (?, ?, ?, ?, ?, ?)
+                 RETURNING id`,
                 [
                     orderId,
                     item.productId,
@@ -260,7 +262,8 @@ async function createCheckoutOrder({
         const [paymentResult] = await connection.execute(
             `INSERT INTO payments
                 (order_id, method, transaction_reference, amount, status, phone_number)
-             VALUES (?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?)
+             RETURNING id`,
             [orderId, paymentMethod, null, total, "pending", phoneNumber]
         );
 
@@ -314,7 +317,8 @@ async function createMpesaRetryAttempt({ orderId, customerId, phoneNumber }) {
 
         const [paymentResult] = await connection.execute(
             `INSERT INTO payments (order_id, method, amount, status, phone_number)
-             VALUES (?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?)
+             RETURNING id`,
             [orderId, "mpesa", order.total, "pending", phoneNumber]
         );
         return {
