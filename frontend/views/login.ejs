@@ -171,7 +171,7 @@
         <% } %>
 
         <form action="/auth/login" method="POST">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
             <label for="email">Email address</label>
             <input
                 id="email"
