@@ -5,6 +5,8 @@ function csrfProtection(req, res, next) {
         return next(new Error("Session middleware must run before CSRF protection."));
     }
 
+    res.set("Cache-Control", "no-store, private");
+
     if (typeof req.session.csrfToken !== "string") {
         req.session.csrfToken = crypto.randomBytes(32).toString("hex");
     }

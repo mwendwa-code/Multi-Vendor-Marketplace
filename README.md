@@ -22,6 +22,8 @@
 
 The development server can be started with `npm run dev`.
 
+If sign-in says the login page expired, reload `/login` and submit the refreshed form. CSRF-protected pages are sent with no-cache headers so stale forms are not reused.
+
 ## Deploy to Render
 
 This app uses PostgreSQL for marketplace data and sessions. Uploaded product images, seller logos, private refund evidence, and database backup exports remain on the persistent disk mounted at `/var/data`. Deploy it as a **Blueprint** from this repository using `render.yaml`; the Blueprint provisions the web service, PostgreSQL database, and persistent disk. The Blueprint currently selects Render's free PostgreSQL plan, which is limited and expires after its free retention period. Upgrade the database plan in Render before relying on it for production data.
