@@ -293,25 +293,6 @@ CREATE TABLE IF NOT EXISTS users (
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 );
 
-                CREATE TABLE IF NOT EXISTS admin_mfa (
-                    user_id INTEGER PRIMARY KEY,
-                    secret_ciphertext TEXT NOT NULL,
-                    enabled_at TIMESTAMP,
-                    last_totp_step INTEGER NOT NULL DEFAULT -1,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                );
-
-                CREATE TABLE IF NOT EXISTS admin_mfa_recovery_codes (
-                    id SERIAL PRIMARY KEY,
-                    user_id INTEGER NOT NULL,
-                    code_hash TEXT NOT NULL,
-                    used_at TIMESTAMP,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(user_id, code_hash),
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                );
-
                 CREATE TABLE IF NOT EXISTS customer_product_views (
                     customer_id INTEGER NOT NULL,
                     product_id INTEGER NOT NULL,

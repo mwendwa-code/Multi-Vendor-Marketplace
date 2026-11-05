@@ -141,11 +141,6 @@
         <% if (typeof csrfExpired !== "undefined" && csrfExpired) { %>
             <p class="error-notice" role="alert">Your login page expired, so your sign-in was not submitted. Please enter your email and password again.</p>
         <% } %>
-        <% if (typeof mfaMessage !== "undefined" && mfaMessage === "required") { %>
-            <p class="notice" role="status">Administrator accounts must complete authenticator verification before accessing the dashboard. Please sign in again.</p>
-        <% } else if (typeof mfaMessage !== "undefined" && mfaMessage === "expired") { %>
-            <p class="error-notice" role="alert">Your administrator verification expired or had too many failed attempts. Please sign in again.</p>
-        <% } %>
         <% if (typeof loginError !== "undefined" && loginError === "required") { %>
             <p class="error-notice" role="alert">Enter your email address and password to sign in.</p>
         <% } else if (typeof loginError !== "undefined" && loginError === "invalid") { %>

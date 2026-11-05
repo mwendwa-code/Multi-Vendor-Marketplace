@@ -36,13 +36,6 @@ function requireRole(...allowedRoles) {
             return res.status(403).send("Access denied.");
         }
 
-        if (normalizedUserRole === "admin" && req.session.mfaVerified !== true) {
-            return req.session.destroy((error) => {
-                if (error) return next(error);
-                return res.redirect(303, "/login?mfa=required");
-            });
-        }
-
         next();
     };
 }

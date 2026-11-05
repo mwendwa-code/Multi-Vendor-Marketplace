@@ -226,7 +226,6 @@ app.get("/login", (req, res) => {
     passwordReset: req.query.reset === "success",
     csrfExpired: req.query.csrf === "expired",
     loginError: typeof req.query.error === "string" ? req.query.error : "",
-    mfaMessage: typeof req.query.mfa === "string" ? req.query.mfa : "",
     verify: typeof req.query.verify === "string" ? req.query.verify : "",
     localVerificationUrl,
     googleConfigured: Boolean(

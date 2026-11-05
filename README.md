@@ -26,14 +26,17 @@ The development server can be started with `npm run dev`.
 
 This app uses PostgreSQL for marketplace data and sessions. Uploaded product images, seller logos, private refund evidence, and database backup exports remain on the persistent disk mounted at `/var/data`. Deploy it as a **Blueprint** from this repository using `render.yaml`; the Blueprint provisions the web service, PostgreSQL database, and persistent disk. The Blueprint currently selects Render's free PostgreSQL plan, which is limited and expires after its free retention period. Upgrade the database plan in Render before relying on it for production data.
 
+Administrator sign-in uses an email and password; multi-factor authentication is disabled. Use a strong, unique administrator password.
+
 When Render prompts for environment values, provide:
 
 - `ADMIN_EMAIL` and `ADMIN_PASSWORD` for the first administrator (password must be at least 12 characters).
-- `MFA_ENCRYPTION_KEY`, generated with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 
 Render supplies `DATABASE_URL` from the PostgreSQL service and generates `SESSION_SECRET`. For local development, create a PostgreSQL database and set `DATABASE_URL` in `.env`.
 
 To migrate an existing SQLite marketplace database, take the app offline, create a new empty PostgreSQL database, set `DATABASE_URL` and (if needed) `SQLITE_MIGRATION_PATH`, then run `npm run migrate:sqlite -- --confirm` from the project root. The command refuses non-empty PostgreSQL tables and reports row counts without displaying record contents. Keep the SQLite database and its uploads as a backup until the migration is verified.
+
+The importer skips legacy MFA enrollment and recovery-code tables because administrator MFA is no longer used.
 
 The admin backup feature creates JSON exports of PostgreSQL tables on the persistent disk. Set `APP_BASE_URL` only when using a custom domain; otherwise the app uses Render's external URL.
 

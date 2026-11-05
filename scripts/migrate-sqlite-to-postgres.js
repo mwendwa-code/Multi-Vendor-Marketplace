@@ -17,7 +17,12 @@ const sourcePath = path.resolve(
     process.env.SQLITE_MIGRATION_PATH ||
     path.join(__dirname, "..", "backend", "database", "marketplace.db")
 );
-const skippedTables = new Set(["sessions", "user_sessions"]);
+const skippedTables = new Set([
+    "sessions",
+    "user_sessions",
+    "admin_mfa",
+    "admin_mfa_recovery_codes"
+]);
 
 function quoteIdentifier(identifier) {
     return `"${identifier.replace(/"/g, '""')}"`;

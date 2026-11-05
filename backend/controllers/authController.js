@@ -6,9 +6,6 @@ const db = require("../database/db");
 const { normalizeCart } = require("../services/checkoutService");
 const { normalizeBusinessWebsite } = require("../services/businessWebsite");
 const { recordAuditEvent } = require("../database/audit");
-const adminMfa = require("../services/adminMfa");
-
-const adminMfaChallengeLifetimeMs = 5 * 60 * 1000;
 
 function getGoogleOAuthClient() {
     const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
@@ -42,9 +39,6 @@ function establishSession(req, res, user, onSuccess) {
             email: user.email,
             role: user.role
         };
-        if (user.role === "admin") {
-            req.session.mfaVerified = true;
-        }
         req.session.cart = cart;
         req.session.csrfToken = crypto.randomBytes(32).toString("hex");
 
@@ -58,191 +52,6 @@ function establishSession(req, res, user, onSuccess) {
         });
     });
 }
-
-async function beginAdminMfaLogin(req, res, user, authMethod = "password") {
-    const mfaStatus = await adminMfa.prepareAdminMfa(user.id);
-    const cart = normalizeCart(req.session.cart || []);
-    return new Promise((resolve) => {
-        req.session.regenerate((error) => {
-            if (error) {
-                console.error("Administrator MFA session error:", error.message);
-                resolve(res.status(500).send("Could not start administrator sign-in."));
-                return;
-            }
-
-            req.session.pendingAdminMfa = {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: "admin",
-                authMethod
-            };
-            req.session.pendingAdminMfaAt = Date.now();
-            req.session.adminMfaFailures = 0;
-            req.session.cart = cart;
-            req.session.csrfToken = crypto.randomBytes(32).toString("hex");
-            req.session.save((saveError) => {
-                if (saveError) {
-                    console.error("Administrator MFA session error:", saveError.message);
-                    resolve(res.status(500).send("Could not start administrator sign-in."));
-                    return;
-                }
-                resolve(res.redirect(mfaStatus.enrolled
-                    ? "/auth/two-factor/verify"
-                    : "/auth/two-factor/setup"));
-            });
-        });
-    });
-}
-
-function getPendingAdmin(req, res) {
-    const pending = req.session?.pendingAdminMfa;
-    const startedAt = Number(req.session?.pendingAdminMfaAt);
-    if (
-        !pending ||
-        pending.role !== "admin" ||
-        !Number.isSafeInteger(Number(pending.id)) ||
-        !Number.isFinite(startedAt) ||
-        Date.now() - startedAt > adminMfaChallengeLifetimeMs
-    ) {
-        if (req.session) {
-            delete req.session.pendingAdminMfa;
-            delete req.session.pendingAdminMfaAt;
-            delete req.session.adminMfaFailures;
-        }
-        return null;
-    }
-    return pending;
-}
-
-async function renderAdminMfaError(req, res, view, errorMessage) {
-    req.session.adminMfaFailures = Number(req.session.adminMfaFailures || 0) + 1;
-    if (req.session.adminMfaFailures >= 5) {
-        delete req.session.pendingAdminMfa;
-        delete req.session.pendingAdminMfaAt;
-        delete req.session.adminMfaFailures;
-        return res.redirect(303, "/login?mfa=expired");
-    }
-    res.set("Cache-Control", "no-store");
-    res.set("Referrer-Policy", "no-referrer");
-    const locals = {
-        user: req.session.pendingAdminMfa,
-        errorMessage
-    };
-    if (view === "two-factor-setup") {
-        const secret = await adminMfa.getPendingSecret(locals.user.id);
-        if (!secret) return res.redirect(303, "/auth/two-factor/verify");
-        locals.secret = secret;
-        locals.authenticatorUri = adminMfa.getAuthenticatorUri(secret, locals.user.email);
-    }
-    return res.status(400).render(view, locals);
-}
-
-async function finishAdminMfaLogin(req, res) {
-    const pending = getPendingAdmin(req, res);
-    if (!pending) return res.redirect(303, "/login?mfa=expired");
-
-    await recordAuditEvent(pending.id, "admin_mfa_login_verified");
-    if (pending.authMethod === "google") {
-        await recordAuditEvent(pending.id, "google_login_success");
-    }
-    await recordAuditEvent(pending.id, "login_success");
-    return establishSession(req, res, pending, () => {
-        return res.redirect(getDashboardPath(pending.role));
-    });
-}
-
-exports.requirePendingAdminMfa = (req, res, next) => {
-    if (!getPendingAdmin(req, res)) {
-        return res.redirect(303, "/login?mfa=expired");
-    }
-    next();
-};
-
-exports.showAdminMfaSetup = async (req, res) => {
-    const pending = getPendingAdmin(req, res);
-    if (!pending) return res.redirect(303, "/login?mfa=expired");
-
-    try {
-        const secret = await adminMfa.getPendingSecret(pending.id);
-        if (!secret) return res.redirect(303, "/auth/two-factor/verify");
-        res.set("Cache-Control", "no-store");
-        res.set("Referrer-Policy", "no-referrer");
-        return res.render("two-factor-setup", {
-            user: pending,
-            secret,
-            authenticatorUri: adminMfa.getAuthenticatorUri(secret, pending.email),
-            errorMessage: ""
-        });
-    } catch (error) {
-        console.error("Administrator MFA setup error:", error.message);
-        return res.status(503).send("Administrator MFA is unavailable. Contact the site administrator.");
-    }
-};
-
-exports.enableAdminMfa = async (req, res) => {
-    const pending = getPendingAdmin(req, res);
-    if (!pending) return res.redirect(303, "/login?mfa=expired");
-
-    const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
-    if (!/^\d{6}$/.test(code)) {
-        return renderAdminMfaError(req, res, "two-factor-setup", "Enter the 6-digit code from your authenticator app.");
-    }
-
-    try {
-        const secret = await adminMfa.getPendingSecret(pending.id);
-        if (!secret) return res.redirect(303, "/auth/two-factor/verify");
-        const recoveryCodes = await adminMfa.enableAdminMfa(pending.id, code);
-        if (!recoveryCodes) {
-            return renderAdminMfaError(req, res, "two-factor-setup", "That code is invalid or expired. Try the latest code in your authenticator app.");
-        }
-        await recordAuditEvent(pending.id, "admin_mfa_enabled");
-        await recordAuditEvent(pending.id, "admin_mfa_login_verified");
-        if (pending.authMethod === "google") {
-            await recordAuditEvent(pending.id, "google_login_success");
-        }
-        await recordAuditEvent(pending.id, "login_success");
-        res.set("Cache-Control", "no-store");
-        res.set("Referrer-Policy", "no-referrer");
-        return establishSession(req, res, pending, () =>
-            res.render("two-factor-recovery", { recoveryCodes })
-        );
-    } catch (error) {
-        console.error("Administrator MFA enrollment error:", error.message);
-        return res.status(503).send("Could not complete administrator MFA enrollment.");
-    }
-};
-
-exports.showAdminMfaVerification = (req, res) => {
-    const pending = getPendingAdmin(req, res);
-    if (!pending) return res.redirect(303, "/login?mfa=expired");
-    res.set("Cache-Control", "no-store");
-    res.set("Referrer-Policy", "no-referrer");
-    return res.render("two-factor-verify", {
-        user: pending,
-        errorMessage: ""
-    });
-};
-
-exports.verifyAdminMfaLogin = async (req, res) => {
-    const pending = getPendingAdmin(req, res);
-    if (!pending) return res.redirect(303, "/login?mfa=expired");
-
-    const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
-    if (!/^(?:\d{6}|[A-Fa-f0-9]{5}-?[A-Fa-f0-9]{5})$/.test(code)) {
-        return renderAdminMfaError(req, res, "two-factor-verify", "Enter a 6-digit authenticator code or an unused recovery code.");
-    }
-
-    try {
-        if (!await adminMfa.verifyAdminMfa(pending.id, code)) {
-            return renderAdminMfaError(req, res, "two-factor-verify", "That code is invalid or already used. Try again.");
-        }
-        return await finishAdminMfaLogin(req, res);
-    } catch (error) {
-        console.error("Administrator MFA verification error:", error.message);
-        return res.status(503).send("Administrator MFA is unavailable. Contact the site administrator.");
-    }
-};
 
 function getMailer() {
     const { SMTP_HOST, SMTP_USER, SMTP_PASSWORD } = process.env;
@@ -556,9 +365,6 @@ exports.login = async (req, res) => {
             }
         }
 
-        if (user.role === "admin") {
-            return await beginAdminMfaLogin(req, res, user);
-        }
         await recordAuditEvent(user.id, "login_success");
         return establishSession(req, res, user, () => res.redirect(
             req.session.cart.length > 0 ? "/cart" : getDashboardPath(user.role)
@@ -707,10 +513,6 @@ exports.completeGoogleLogin = async (req, res) => {
                 role: "customer",
                 email_verified: 1
             };
-        }
-
-        if (user.role === "admin") {
-            return await beginAdminMfaLogin(req, res, user, "google");
         }
 
         await recordAuditEvent(user.id, "google_login_success");

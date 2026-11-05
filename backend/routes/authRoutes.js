@@ -24,18 +24,8 @@ const passwordResetLimiter = createRateLimiter({
     max: 5,
     message: "Too many password recovery attempts. Please try again later."
 });
-const mfaLimiter = createRateLimiter({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: "Too many verification attempts. Please sign in again later."
-});
-
 router.post("/register", registrationLimiter, authController.register);
 router.post("/login", loginLimiter, authController.login);
-router.get("/two-factor/setup", authController.requirePendingAdminMfa, authController.showAdminMfaSetup);
-router.post("/two-factor/setup", authController.requirePendingAdminMfa, mfaLimiter, authController.enableAdminMfa);
-router.get("/two-factor/verify", authController.requirePendingAdminMfa, authController.showAdminMfaVerification);
-router.post("/two-factor/verify", authController.requirePendingAdminMfa, mfaLimiter, authController.verifyAdminMfaLogin);
 router.get("/verify-email", authController.verifyEmail);
 router.post("/resend-verification", verificationLimiter, authController.resendVerification);
 router.get("/logout", authController.logout);
