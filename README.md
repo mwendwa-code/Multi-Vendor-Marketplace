@@ -8,9 +8,17 @@
 
 ## Run locally
 
-1. Install dependencies with `npm install`.
-2. Configure the required values in `.env` (copy `.env.example` as a starting point).
-3. Start the server with `npm start`.
+1. Install Node.js 22 or newer and PostgreSQL, then start the PostgreSQL service.
+2. Create a local database, for example with `createdb marketplace_db`, or connect with `psql` and run `CREATE DATABASE marketplace_db;`.
+3. Install the app dependencies with `npm install`.
+4. Copy `.env.example` to `.env` and set `DATABASE_URL` to your PostgreSQL connection string:
+
+   ```text
+   DATABASE_URL=postgresql://<db-user>:<db-password>@localhost:5432/marketplace_db
+   ```
+
+   Replace the placeholders with your local PostgreSQL credentials. If your password contains URL-reserved characters, URL-encode them. To create an administrator automatically on first startup, also set `ADMIN_EMAIL` and `ADMIN_PASSWORD` (at least 12 characters).
+5. Start the app with `npm start` and open `http://localhost:3000`. On startup, the app creates or updates its PostgreSQL tables.
 
 The development server can be started with `npm run dev`.
 
