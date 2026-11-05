@@ -819,11 +819,10 @@ const db = {
             )
         `);
 
-        await db.execute("UPDATE users SET role = ? WHERE role IN (?, ?)", [
-            "customer",
-            "buyer",
-            "manager"
-        ]);
+        await db.execute(
+            "UPDATE users SET role = ? WHERE role = ?",
+            ["customer", "buyer"]
+        );
 
         const [categories] = await db.execute("SELECT id FROM categories WHERE name = ?", ["Electronics"]);
         if (categories.length === 0) {
