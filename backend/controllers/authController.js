@@ -223,14 +223,8 @@ exports.register = async (req, res) => {
             }
         }
 
-        const mailer = getMailer();
-        if (!mailer && process.env.NODE_ENV === "production") {
-            return res.status(503).send("Email verification is unavailable. Please try again later.");
-        }
-        getAppBaseUrl();
-
         const hashedPassword = await bcrypt.hash(password, 12);
-        const verificationToken = await db.transaction(async (connection) => {
+        const userId = await db.transaction(async (connection) => {
             const [existingUsers] = await connection.execute(
                 "SELECT id FROM users WHERE email = ?",
                 [normalizedEmail]
@@ -241,13 +235,15 @@ exports.register = async (req, res) => {
             }
 
             const [result] = await connection.execute(
-                "INSERT INTO users (name, email, password, role, email_verified, referral_code) VALUES (?, ?, ?, ?, 0, ?) RETURNING id",
+                "INSERT INTO users (name, email, password, role, email_verified, referral_code) VALUES (?, ?, ?, ?, 1, ?) RETURNING id",
                 [
                     name.trim(),
                     normalizedEmail,
                     hashedPassword,
                     normalizedRole,
-                    normalizedRole === "customer" ? crypto.randomBytes(8).toString("hex").toUpperCase() : null
+                    normalizedRole === "customer"
+                        ? crypto.randomBytes(8).toString("hex").toUpperCase()
+                        : null
                 ]
             );
 
@@ -264,27 +260,14 @@ exports.register = async (req, res) => {
             }
 
             await recordAuditEvent(result.insertId, "account_registered");
-            return createVerificationToken(result.insertId);
+            return result.insertId;
         });
 
-        if (!verificationToken) {
+        if (!userId) {
             return res.status(409).send("An account with this email already exists.");
         }
 
-        try {
-            const delivery = await deliverVerification(
-                normalizedEmail,
-                name.trim(),
-                verificationToken
-            );
-            await saveLocalVerificationUrl(req, delivery.verificationUrl);
-            return res.redirect(`/login?verify=${delivery.deliveryMode}`);
-        } catch (emailError) {
-            console.error("Registration verification email error:", emailError.message);
-            return res.status(503).send(
-                "Your account was created, but the verification email could not be sent. Use the resend-verification form on the login page."
-            );
-        }
+        return res.redirect("/login?registered=success");
     } catch (error) {
         if (
             error.code === "23505" ||
