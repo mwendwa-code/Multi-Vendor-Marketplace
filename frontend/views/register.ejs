@@ -76,6 +76,13 @@
             color: #1e40af;
             line-height: 1.5;
         }
+        .form-error {
+            padding: 10px;
+            border-radius: 6px;
+            background: #fef2f2;
+            color: #991b1b;
+            line-height: 1.5;
+        }
         p { text-align: center; }
     </style>
 </head>
@@ -86,7 +93,7 @@
             <p class="notice" role="status">Create an account before placing your order. Your cart will be saved; after registering, log in to continue. Already have an account? <a href="/login">Log in</a>.</p>
         <% } %>
 
-        <form action="/auth/register" method="POST">
+        <form id="registration-form" action="/auth/register" method="POST">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <% if (referralCode) { %>
                 <input type="hidden" name="referralCode" value="<%= referralCode %>">
@@ -131,6 +138,7 @@
 
             <button type="submit">Register</button>
         </form>
+        <p id="registration-error" class="form-error" role="alert" hidden></p>
 
         <% if (typeof googleConfigured !== "undefined" && googleConfigured) { %>
             <a class="google-button" href="<%= referralCode ? `/auth/google?ref=${encodeURIComponent(referralCode)}` : '/auth/google' %>">Continue with Google</a>

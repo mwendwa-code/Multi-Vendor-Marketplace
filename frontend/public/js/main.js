@@ -17,6 +17,74 @@ if (roleSelect && businessNameField && businessNameInput) {
     updateBusinessNameField();
 }
 
+const registrationForm = document.querySelector("#registration-form");
+const registrationError = document.querySelector("#registration-error");
+
+if (registrationForm && registrationError) {
+    registrationForm.addEventListener("invalid", (event) => {
+        registrationError.textContent = event.target.validationMessage;
+        registrationError.hidden = false;
+    }, true);
+
+    registrationForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        registrationError.textContent = "";
+        registrationError.hidden = true;
+
+        const submitButton = registrationForm.querySelector('button[type="submit"]');
+        const originalLabel = submitButton?.textContent || "Register";
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Creating account...";
+        }
+
+        let redirecting = false;
+        try {
+            const response = await fetch(registrationForm.action, {
+                method: "POST",
+                body: new URLSearchParams(new FormData(registrationForm)),
+                credentials: "same-origin"
+            });
+            const responseUrl = new URL(response.url, window.location.href);
+            const expectedPath = roleSelect?.value === "seller" ? "/seller" : "/customer";
+
+            if (response.redirected && response.ok && responseUrl.pathname === expectedPath) {
+                redirecting = true;
+                window.location.assign(responseUrl.href);
+                return;
+            }
+
+            if (response.redirected && responseUrl.pathname === "/login") {
+                registrationError.textContent = responseUrl.searchParams.has("csrf")
+                    ? "This registration form expired. Reload the page and try again."
+                    : "Your account may have been created, but sign-in did not complete. Please log in with the account details you just registered.";
+                registrationError.hidden = false;
+                return;
+            }
+
+            const contentType = response.headers.get("content-type") || "";
+            const responseText = contentType.includes("text/html")
+                ? ""
+                : (await response.text()).trim();
+            registrationError.textContent = responseText || (
+                response.status === 429
+                    ? "Too many registration attempts. Please wait and try again."
+                    : `We could not complete registration (HTTP ${response.status}). Please try again.`
+            );
+            registrationError.hidden = false;
+        } catch (error) {
+            console.error("Registration request failed:", error);
+            registrationError.textContent = "Could not reach the marketplace. Check your connection and try again.";
+            registrationError.hidden = false;
+        } finally {
+            if (!redirecting && submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalLabel;
+            }
+        }
+    });
+}
+
 const productGrid = document.querySelector("#product-grid");
 const searchInput = document.querySelector("#product-search");
 const categorySelect = document.querySelector("#product-category");
