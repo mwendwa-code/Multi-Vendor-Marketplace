@@ -66,6 +66,17 @@ if (registrationForm && registrationError) {
             const responseText = contentType.includes("text/html")
                 ? ""
                 : (await response.text()).trim();
+
+            if (response.status === 409) {
+                registrationError.textContent = "An account with this email already exists. ";
+                const loginLink = document.createElement("a");
+                loginLink.href = "/login";
+                loginLink.textContent = "Log in";
+                registrationError.append(loginLink);
+                registrationError.hidden = false;
+                return;
+            }
+
             registrationError.textContent = responseText || (
                 response.status === 429
                     ? "Too many registration attempts. Please wait and try again."
