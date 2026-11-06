@@ -14,11 +14,6 @@ const registrationLimiter = createRateLimiter({
     max: 5,
     message: "Too many registration attempts. Please try again later."
 });
-const verificationLimiter = createRateLimiter({
-    windowMs: 60 * 60 * 1000,
-    max: 3,
-    message: "Too many verification requests. Please try again later."
-});
 const passwordResetLimiter = createRateLimiter({
     windowMs: 15 * 60 * 1000,
     max: 5,
@@ -27,7 +22,6 @@ const passwordResetLimiter = createRateLimiter({
 router.post("/register", registrationLimiter, authController.register);
 router.post("/login", loginLimiter, authController.login);
 router.get("/verify-email", authController.verifyEmail);
-router.post("/resend-verification", verificationLimiter, authController.resendVerification);
 router.get("/logout", authController.logout);
 router.post("/logout", authController.logout);
 router.get("/google", authController.startGoogleLogin);

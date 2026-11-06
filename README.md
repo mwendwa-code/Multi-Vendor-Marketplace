@@ -44,6 +44,6 @@ The importer skips legacy MFA enrollment and recovery-code tables because admini
 
 The admin backup feature creates JSON exports of PostgreSQL tables on the persistent disk. Set `APP_BASE_URL` only when using a custom domain; otherwise the app uses Render's external URL.
 
-Email verification and password recovery require working SMTP credentials. Google sign-in and M-Pesa payments are optional; add their credentials when enabling those integrations. For Google OAuth, register `https://<your-service>.onrender.com/auth/google/callback` as an authorized redirect URI. Set `MPESA_CALLBACK_URL` to `https://<your-service>.onrender.com/api/payments/mpesa/callback` and generate a URL-safe `MPESA_CALLBACK_TOKEN` with at least 32 characters.
+Password recovery requires working SMTP credentials. Registration does not require email verification. Google sign-in and M-Pesa payments are optional; add their credentials when enabling those integrations. For Google OAuth, register `https://<your-service>.onrender.com/auth/google/callback` as an authorized redirect URI. Set `MPESA_CALLBACK_URL` to `https://<your-service>.onrender.com/api/payments/mpesa/callback` and generate a URL-safe `MPESA_CALLBACK_TOKEN` with at least 32 characters.
 
 After deployment, Render checks `/healthz`. Use a single web instance when relying on the local persistent disk for uploaded files and backup exports.

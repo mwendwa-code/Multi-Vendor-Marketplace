@@ -145,26 +145,12 @@
             <p class="error-notice" role="alert">Enter your email address and password to sign in.</p>
         <% } else if (typeof loginError !== "undefined" && loginError === "invalid") { %>
             <p class="error-notice" role="alert">The email or password you entered is incorrect. Check your details and try again.</p>
-        <% } else if (typeof loginError !== "undefined" && loginError === "verification-unavailable") { %>
-            <p class="error-notice" role="alert">Your account needs email verification, but the verification email could not be sent. Please try again later or contact the site administrator.</p>
         <% } else if (typeof loginError !== "undefined" && loginError === "unavailable") { %>
             <p class="error-notice" role="alert">We could not sign you in right now. Please try again shortly.</p>
         <% } %>
         <% if (typeof passwordReset !== "undefined" && passwordReset) { %>
             <p class="notice" role="status">Your password was changed. You can now sign in.</p>
         <% } %>
-        <% if (typeof verify !== "undefined" && verify === "sent") { %>
-            <p class="notice" role="status">If your account needs verification, a verification link has been sent to your email address. Check your inbox and spam folder.</p>
-        <% } else if (typeof verify !== "undefined" && verify === "local") { %>
-            <p class="notice" role="status">
-                Email delivery is not configured. In this local development app, logging in with the correct password automatically verifies your account.
-            </p>
-        <% } else if (typeof verify !== "undefined" && verify === "success") { %>
-            <p class="notice" role="status">Your email is verified. You can now sign in.</p>
-        <% } else if (typeof verify !== "undefined" && verify === "invalid") { %>
-            <p class="notice" role="status">That verification link is invalid or expired. Request a new one below.</p>
-        <% } %>
-
         <form action="/auth/login" method="POST">
             <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
             <label for="email">Email address</label>

@@ -53,109 +53,6 @@ function establishSession(req, res, user, onSuccess) {
     });
 }
 
-function getMailer() {
-    const { SMTP_HOST, SMTP_USER, SMTP_PASSWORD } = process.env;
-    const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASSWORD || !Number.isInteger(SMTP_PORT) || SMTP_PORT < 1 || SMTP_PORT > 65535) {
-        return null;
-    }
-
-    return nodemailer.createTransport({
-        host: SMTP_HOST,
-        port: SMTP_PORT,
-        secure: process.env.SMTP_SECURE === "true",
-        auth: { user: SMTP_USER, pass: SMTP_PASSWORD }
-    });
-}
-
-function getAppBaseUrl() {
-    const configuredUrl = process.env.APP_BASE_URL ||
-        process.env.RENDER_EXTERNAL_URL ||
-        `http://localhost:${process.env.PORT || 3000}`;
-    const parsedUrl = new URL(configuredUrl);
-    if (
-        !["http:", "https:"].includes(parsedUrl.protocol) ||
-        (process.env.NODE_ENV === "production" && parsedUrl.protocol !== "https:") ||
-        parsedUrl.username ||
-        parsedUrl.password
-    ) {
-        throw new Error("APP_BASE_URL must be a URL without embedded credentials and use HTTPS in production.");
-    }
-    return parsedUrl.origin;
-}
-
-async function createVerificationToken(userId) {
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    await db.execute(
-        `INSERT INTO email_verification_tokens (user_id, token_hash, expires_at)
-         VALUES (?, ?, ?)
-         ON CONFLICT(user_id) DO UPDATE SET
-            token_hash = excluded.token_hash,
-            expires_at = excluded.expires_at,
-            created_at = CURRENT_TIMESTAMP`,
-        [userId, tokenHash, expiresAt]
-    );
-    return token;
-}
-
-function getVerificationUrl(token) {
-    const verificationUrl = new URL("/auth/verify-email", getAppBaseUrl());
-    verificationUrl.searchParams.set("token", token);
-    return verificationUrl.toString();
-}
-
-async function sendVerificationEmail(email, name, token) {
-    const transporter = getMailer();
-    const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
-    if (!transporter || !fromAddress) {
-        throw new Error("Email verification is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM.");
-    }
-
-    const verificationUrl = getVerificationUrl(token);
-    await transporter.sendMail({
-        from: fromAddress,
-        to: email,
-        subject: "Verify your marketplace email",
-        text: `Hello ${name},\n\nVerify your email address by opening this link within 24 hours:\n${verificationUrl.toString()}`,
-        html: `<p>Hello ${escapeHtml(name)},</p><p><a href="${escapeHtml(verificationUrl.toString())}">Verify your email address</a>. This link expires in 24 hours.</p>`
-    });
-}
-
-async function deliverVerification(email, name, token) {
-    if (getMailer()) {
-        await sendVerificationEmail(email, name, token);
-        return { deliveryMode: "sent", verificationUrl: null };
-    }
-
-    if (process.env.NODE_ENV === "production") {
-        throw new Error("Email verification is not configured.");
-    }
-
-    return {
-        deliveryMode: "local",
-        verificationUrl: getVerificationUrl(token)
-    };
-}
-
-async function saveLocalVerificationUrl(req, verificationUrl) {
-    if (!verificationUrl) {
-        return;
-    }
-
-    req.session.localVerificationUrl = verificationUrl;
-    await new Promise((resolve, reject) => {
-        req.session.save((error) => {
-            if (error) {
-                reject(error);
-                return;
-            }
-            resolve();
-        });
-    });
-}
-
 // Register a new customer or seller
 exports.register = async (req, res) => {
     try {
@@ -322,35 +219,18 @@ exports.login = async (req, res) => {
         }
 
         if (!user.email_verified) {
-            if (process.env.NODE_ENV !== "production" && !getMailer()) {
-                await db.transaction(async (connection) => {
-                    await connection.execute(
-                        "UPDATE users SET email_verified = 1 WHERE id = ?",
-                        [user.id]
-                    );
-                    await connection.execute(
-                        "DELETE FROM email_verification_tokens WHERE user_id = ?",
-                        [user.id]
-                    );
-                });
-                user.email_verified = 1;
-                await recordAuditEvent(user.id, "email_verified_local_development");
-            } else {
-                const verificationToken = await createVerificationToken(user.id);
-                try {
-                    const delivery = await deliverVerification(
-                        user.email,
-                        user.name,
-                        verificationToken
-                    );
-                    await recordAuditEvent(user.id, "email_verification_resent");
-                    await saveLocalVerificationUrl(req, delivery.verificationUrl);
-                    return res.redirect(`/login?verify=${delivery.deliveryMode}`);
-                } catch (verificationError) {
-                    console.error("Login verification error:", verificationError.message);
-                    return res.redirect(303, "/login?error=verification-unavailable");
-                }
-            }
+            await db.transaction(async (connection) => {
+                await connection.execute(
+                    "UPDATE users SET email_verified = 1 WHERE id = ?",
+                    [user.id]
+                );
+                await connection.execute(
+                    "DELETE FROM email_verification_tokens WHERE user_id = ?",
+                    [user.id]
+                );
+            });
+            user.email_verified = 1;
+            await recordAuditEvent(user.id, "email_verified_legacy_account_auto_verified");
         }
 
         await recordAuditEvent(user.id, "login_success");
@@ -517,7 +397,7 @@ exports.verifyEmail = async (req, res) => {
     res.set("Cache-Control", "no-store");
     const token = typeof req.query.token === "string" ? req.query.token : "";
     if (!/^[a-f0-9]{64}$/.test(token)) {
-        return res.redirect("/login?verify=invalid");
+        return res.redirect("/login");
     }
 
     try {
@@ -530,47 +410,16 @@ exports.verifyEmail = async (req, res) => {
         );
         const verification = tokens[0];
         if (!verification || Date.parse(verification.expires_at) <= Date.now()) {
-            return res.redirect("/login?verify=invalid");
+            return res.redirect("/login");
         }
 
         await db.execute("UPDATE users SET email_verified = 1 WHERE id = ?", [verification.user_id]);
         await db.execute("DELETE FROM email_verification_tokens WHERE user_id = ?", [verification.user_id]);
         await recordAuditEvent(verification.user_id, "email_verified");
-        return res.redirect("/login?verify=success");
+        return res.redirect("/login");
     } catch (error) {
         console.error("Email verification error:", error.message);
         return res.status(500).send("Could not verify the email address. Please try again.");
-    }
-};
-
-exports.resendVerification = async (req, res) => {
-    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 150) {
-        return res.status(400).send("Enter a valid email address.");
-    }
-
-    try {
-        const [users] = await db.execute(
-            "SELECT id, name, email_verified FROM users WHERE email = ?",
-            [email]
-        );
-
-        if (users.length > 0 && !users[0].email_verified) {
-            const token = await createVerificationToken(users[0].id);
-            const delivery = await deliverVerification(
-                users[0].email,
-                users[0].name,
-                token
-            );
-            await recordAuditEvent(users[0].id, "email_verification_resent");
-            await saveLocalVerificationUrl(req, delivery.verificationUrl);
-            return res.redirect(`/login?verify=${delivery.deliveryMode}`);
-        }
-
-        return res.redirect("/login?verify=sent");
-    } catch (error) {
-        console.error("Verification resend error:", error.message);
-        return res.status(503).send("Could not send a verification email right now. Please try again later.");
     }
 };
 

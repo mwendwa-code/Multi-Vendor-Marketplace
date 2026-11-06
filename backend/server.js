@@ -215,19 +215,10 @@ app.get("/login", (req, res) => {
     return res.redirect("/customer");
   }
 
-  const localVerificationUrl =
-    process.env.NODE_ENV !== "production" &&
-    typeof req.session.localVerificationUrl === "string"
-      ? req.session.localVerificationUrl
-      : "";
-  delete req.session.localVerificationUrl;
-
   res.render("login", {
     passwordReset: req.query.reset === "success",
     csrfExpired: req.query.csrf === "expired",
     loginError: typeof req.query.error === "string" ? req.query.error : "",
-    verify: typeof req.query.verify === "string" ? req.query.verify : "",
-    localVerificationUrl,
     googleConfigured: Boolean(
       process.env.GOOGLE_CLIENT_ID &&
       process.env.GOOGLE_CLIENT_SECRET &&
