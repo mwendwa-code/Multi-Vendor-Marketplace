@@ -90,7 +90,7 @@
     <div class="container">
         <h1>Create Account</h1>
         <% if (checkoutRequired) { %>
-            <p class="notice" role="status">Create an account before placing your order. Your cart will be saved; after registering, log in to continue. Already have an account? <a href="/login">Log in</a>.</p>
+            <p class="notice" role="status">Create an account before placing your order. Your cart will be saved, and you’ll be taken directly to your dashboard. Already have an account? <a href="/login">Log in</a>.</p>
         <% } %>
 
         <form id="registration-form" action="/auth/register" method="POST">
@@ -136,7 +136,7 @@
                 <input id="businessWebsite" name="businessWebsite" type="url" maxlength="2048" placeholder="https://example.com" autocomplete="url" disabled>
             </div>
 
-            <button type="submit">Register</button>
+            <button type="submit">Create account</button>
         </form>
         <p id="registration-error" class="form-error" role="alert" hidden></p>
 

@@ -214,7 +214,7 @@
                 </form>
             <% } else { %>
                 <a href="/login">Login</a>
-                <a href="/register">Register</a>
+                <a href="/register">Create account</a>
             <% } %>
         </nav>
     </header>
@@ -307,7 +307,7 @@
                         <p class="notice">Earn points on delivered orders and shopping missions. You need at least 100 points to redeem KSh 50 off.</p>
                     <% } %>
                     <% if (!user) { %>
-                        <p class="notice" role="status">Create an account before placing your order. Your cart will be saved while you register. Already registered? <a href="/login">Log in</a>.</p>
+                        <p class="notice" role="status">Create an account before placing your order. Your cart will be saved, and you’ll be taken directly to your dashboard. Already registered? <a href="/login">Log in</a>.</p>
                     <% } %>
                     <form id="checkout-form" class="checkout-form" action="/cart/checkout" method="POST" data-reward-payment>
                         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
