@@ -153,9 +153,6 @@
         <% if (typeof passwordReset !== "undefined" && passwordReset) { %>
             <p class="notice" role="status">Your password was changed. You can now sign in.</p>
         <% } %>
-        <% if (typeof registrationComplete !== "undefined" && registrationComplete) { %>
-            <p class="notice" role="status">Your account is ready. You can now sign in.</p>
-        <% } %>
         <% if (typeof verify !== "undefined" && verify === "sent") { %>
             <p class="notice" role="status">If your account needs verification, a verification link has been sent to your email address. Check your inbox and spam folder.</p>
         <% } else if (typeof verify !== "undefined" && verify === "local") { %>

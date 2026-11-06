@@ -224,7 +224,6 @@ app.get("/login", (req, res) => {
 
   res.render("login", {
     passwordReset: req.query.reset === "success",
-    registrationComplete: req.query.registered === "success",
     csrfExpired: req.query.csrf === "expired",
     loginError: typeof req.query.error === "string" ? req.query.error : "",
     verify: typeof req.query.verify === "string" ? req.query.verify : "",

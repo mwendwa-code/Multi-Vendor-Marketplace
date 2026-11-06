@@ -267,7 +267,12 @@ exports.register = async (req, res) => {
             return res.status(409).send("An account with this email already exists.");
         }
 
-        return res.redirect("/login?registered=success");
+        return establishSession(req, res, {
+            id: userId,
+            name: name.trim(),
+            email: normalizedEmail,
+            role: normalizedRole
+        }, () => res.redirect(getDashboardPath(normalizedRole)));
     } catch (error) {
         if (
             error.code === "23505" ||

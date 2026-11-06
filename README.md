@@ -30,6 +30,8 @@ This app uses PostgreSQL for marketplace data and sessions. Uploaded product ima
 
 Administrator sign-in uses an email and password; multi-factor authentication is disabled. Use a strong, unique administrator password.
 
+After registering, buyers and sellers are signed in automatically and taken to their dashboards. New seller applications remain pending admin approval; the seller dashboard explains which management features require approval.
+
 When Render prompts for environment values, provide:
 
 - `ADMIN_EMAIL` and `ADMIN_PASSWORD` for the first administrator (password must be at least 12 characters).
