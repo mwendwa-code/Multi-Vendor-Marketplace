@@ -48,7 +48,7 @@ if (registrationForm && registrationError) {
             const responseUrl = new URL(response.url, window.location.href);
             const expectedPath = roleSelect?.value === "seller" ? "/seller" : "/customer";
 
-            if (response.redirected && response.ok && responseUrl.pathname === expectedPath) {
+            if (response.redirected && responseUrl.pathname === expectedPath) {
                 redirecting = true;
                 window.location.assign(responseUrl.href);
                 return;
