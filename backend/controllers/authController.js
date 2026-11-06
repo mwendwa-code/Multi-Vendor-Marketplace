@@ -234,9 +234,7 @@ exports.login = async (req, res) => {
         }
 
         await recordAuditEvent(user.id, "login_success");
-        return establishSession(req, res, user, () => res.redirect(
-            req.session.cart.length > 0 ? "/cart" : getDashboardPath(user.role)
-        ));
+        return establishSession(req, res, user, () => res.redirect(getDashboardPath(user.role)));
     } catch (error) {
         console.error("Login error:", error.message);
         return res.redirect(303, "/login?error=unavailable");
